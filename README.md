@@ -11,20 +11,20 @@ vim /etc/environment
 ```
 
 ```bash
-export BASEHTMLDIR="/var/www/concertmaster/api.cmas.me/html"
+export BASEHTMLDIR="/var/www/concertmaster_api/html"
 ```
 
 3. Update crontab for root
 
 ```bash
 # m     h       dom     mon     dow     command
-0       *       *       *       *       /var/www/concertmaster/api.cmas.me/cln/db.sh
-*/30      *       *       *       *       /var/www/concertmaster/api.cmas.me/cln/user.sh
+0       *       *       *       *       /var/www/concertmaster_api/cln/db.sh
+*/30      *       *       *       *       /var/www/concertmaster_api/cln/user.sh
 ```
 
 4. Change ownership of the HTML directory to group www-data:
 
 ```bash
-cd /var/www/concertmaster/api.cmas.me/
+cd /var/www/concertmaster_api/
 chgrp www-data html -R
 ```
