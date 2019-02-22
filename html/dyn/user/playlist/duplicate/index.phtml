@@ -1,0 +1,46 @@
+<?
+  include_once ("../../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["pid", "name"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // creating a new playlist
+
+      $insert = Array
+                  (
+                    "user_id" => $_REQUEST["id"],
+                    "name" => $_REQUEST["name"]
+                  );
+
+      $_REQUEST["nid"] = mysqlinsert ($mysql, "playlist", $insert);
+
+      $query = "insert into user_playlist (playlist_id, user_id) values ('{$_REQUEST["nid"]}', '{$_REQUEST["id"]}')";
+      mysqli_query ($mysql, $query);
+    
+      // insert recordings
+
+      $query = "insert into playlist_recording (playlist_id, recording_id, position) select '{$_REQUEST["nid"]}', recording_id, position from playlist_recording where playlist_id='{$_REQUEST["pid"]}'";
+      mysqli_query ($mysql, $query);
+
+      // all ok
+      
+      $apireturn["status"]["success"] = "true";
+      $apireturn["list"] = playlists ($_REQUEST["id"]);
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["playlist"]["id"] = $_REQUEST["nid"];
+  }
+
+  shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

@@ -1,0 +1,16 @@
+<?
+  define ("IMGFOLDER", "/var/www/concertmaster/api.cmas.me/html/cover/");
+  $img = explode ("|", $_REQUEST["img"]);
+  $iid = str_replace ("-", "/", $img[1]);
+
+  if (stristr ($iid, "i.scdn.co"))
+  {
+  	copy ("http://". $iid, IMGFOLDER. $_REQUEST["img"]. ".jpg");
+  }
+  else
+  {
+    copy ("http://www.classicalarchives.com/images/coverart/". $iid. ".jpg", IMGFOLDER. $_REQUEST["img"]. ".jpg");
+  }
+
+  header ('Content-Type: image/jpeg');
+  echo file_get_contents (IMGFOLDER. $_REQUEST["img"]. ".jpg");

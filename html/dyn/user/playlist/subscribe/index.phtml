@@ -1,0 +1,41 @@
+<?
+  include_once ("../../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["pid"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // everything ok
+
+      $query = "insert into user_playlist (user_id, playlist_id) values ('{$_REQUEST["id"]}', '{$_REQUEST["pid"]}')";
+
+      mysqli_query ($mysql, $query);
+      $op = mysqli_affected_rows ($mysql);
+
+      if ($op >= 1)
+      {
+        $apireturn["status"]["success"] = "true";
+      }
+      else
+      {
+        $apireturn["status"]["success"] = "false";
+      }
+
+      $apireturn["list"] = playlists ($_REQUEST["id"]);
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["playlist"]["id"] = $_REQUEST["pid"];
+  }
+
+  shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

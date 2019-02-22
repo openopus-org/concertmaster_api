@@ -1,0 +1,24 @@
+<?= file_get_contents ("template.html"); ?>
+
+  <form method="post" action="/dyn/work/edit/" enctype="multipart/form-data">
+    <label for="wid">Work ID:</label>
+    <input type="text" name="wid" />
+    <label for="composer_id">Composer ID:</label>
+    <input type="text" name="composer_id" />
+    <label for="title">Title:</label>
+    <input type="text" name="title" />
+    <label for="genre">Genre:</label>
+    <input type="text" name="genre" />
+    <label for="year">Year:</label>
+    <input type="text" name="year" />
+    <label for="searchterms">Recommended:</label>
+    <input type="text" name="recommended" />
+    <label for="uni_id">Uni ID:</label>
+    <input type="text" name="uni_id" />
+    <label for="id">User ID:</label>
+    <input type="text" name="id" value="1232501018" />
+    <label for="auth">Auth:</label>
+    <input type="text" name="auth" value="<?=md5 (floor ((time() + (60 * 1)) / (60 * 5)). "-1232501018-b42e59dbc4554d07c64fab871dfbb7b4")?>" />
+    <button type="submit">Submit</button>
+  </form>
+</body>

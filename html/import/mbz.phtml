@@ -1,0 +1,166 @@
+<?
+  include_once ("../inc.php");
+
+  // constantes locais
+
+  define ("JASAO", "./db.json");
+  $importall = false;
+
+  // abrindo json original
+
+  $json = file_get_contents (JASAO);
+  $array = json_decode ($json, true);
+
+  // separando obras de compositores
+
+  function work_or_composer ($value)
+  {
+    if (array_key_exists ("composer_id", $value))
+    {
+      global $composerarray;
+      $composerarray[] = $value;
+    }
+    else if (array_key_exists ("work_id", $value))
+    {
+      global $workarray;
+      $workarray[$value["work_composer"]][] = $value;
+    }
+  }
+
+  array_walk ($array, "work_or_composer");
+
+  // gravando os compositores na base
+
+  function save_composer ($value)
+  {
+    global $mysql, $importall, $workarray;
+
+    // para testes
+
+    $willimport = Array
+    (
+      "Bruckner"
+    );
+
+    // ignorando nomes de compositores que nao estao no alfabeto latino
+
+    $notlatin = Array
+    (
+      "Russia",
+      "Armenia",
+      "Urkaine",
+      "Japan",
+      "Greece",
+      "Soviet Union"
+    );
+
+    // procura os compositores no MBz
+
+    if (in_array ($value["composer_name"], $willimport) || $importall)
+    {
+      $api = apidownparse (MBZBASE. "/artist?fmt=json&query=". urlencode ($value["composer_fullname"]), "json");
+
+      // se nao e uma pessoa, nao grava
+
+      if ($api["artists"][0]["type"] == "Person")
+      {
+        $index = 0;
+      }
+      else
+      {
+        $index = 1;
+      }
+
+      if (in_array ($api["artists"][$index]["area"]["name"], $notlatin))
+      {
+        $api["artists"][$index]["name"] = $value["composer_fullname"];
+      }
+
+      // gravando na base
+
+      $insert = Array
+      (
+        "name" => $value["composer_name"],
+        "complete_name" => $api["artists"][$index]["name"],
+        "birth" => $api["artists"][$index]["life-span"]["begin"],
+        "death" => $api["artists"][$index]["life-span"]["end"],
+        "epoch" => $value["composer_period"],
+        "country" => $api["artists"][$index]["area"]["name"],
+        "mb_arid" => $api["artists"][$index]["id"]
+      );
+
+      print_r ($insert);
+      mysqlinsert ($mysql, "composer", $insert);
+      usleep (250000);
+
+      // procura as obras do compositores
+
+      array_walk ($workarray[$value["composer_id"]], "save_work", $api["artists"][$index]["id"]);
+    }
+  }
+
+  function save_work ($value, $key, $arid)
+  {
+    global $mysql, $importall;
+
+    // para testes
+
+    $willimport = Array
+    (
+      //"Symphony no. 6 in A, WAB106",
+      "Symphony no. 1 in C minor, WAB101",
+      "Symphony no. 2 in C minor, WAB102"
+      //"Symphony no. 5 in B flat major, WAB105"
+    );
+
+    // procura as obras no MBz
+
+    if (in_array ($value["work_title"], $willimport) || $importall)
+    {
+      // separa os indices (BWV, K etc), dos numeros, pra busca funcionar melhor
+
+      $pattern = '/(([A-Za-z]+)([0-9]+))/i';
+      $replacement = '$2 $3';
+      $value["work_title"] = preg_replace ($pattern, $replacement, $value["work_title"]);
+
+      $api = apidownparse (MBZBASE. "/work?fmt=json&query=". urlencode ($value["work_title"]. " AND "). "arid:{$arid}", "json");
+
+      print_r ($api);
+
+      foreach ($api["works"] as $work)
+      {
+        if (array_key_exists ("type", $work))
+        {
+          $apiwork = $work;
+          break;
+        }
+      }
+
+      // procura os movimentos no MBz
+
+      $api = apidownparse (MBZBASE. "/work/{$apiwork["id"]}?fmt=json&inc=work-rels", "json");
+
+      foreach ($api["relations"] as $rels)
+      {
+        $workrels[] = $rels["work"]["id"];
+      }
+
+      // gravando na base
+
+      $insert = Array
+      (
+        "composer_id" => $value["work_composer"],
+        "title" => $apiwork["title"],
+        "genre" => $value["work_genre"],
+        "year" => "",
+        "recommended" => 0,
+        "mb_wid" => $apiwork["id"],
+        "mb_workparts" => json_encode ($workrels)
+      );
+
+      print_r ($insert);
+      mysqlinsert ($mysql, "work", $insert);
+    }
+  }
+
+  array_walk ($composerarray, "save_composer");

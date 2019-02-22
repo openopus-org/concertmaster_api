@@ -1,0 +1,21 @@
+<?
+  include_once ("../../../lib/inc.php");
+
+  if (!postcheck ($_REQUEST, ["id"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // everything ok
+
+      $apireturn["works"] = worklist ($_REQUEST["id"]);
+      $apireturn["favorite"] = composerlist ("favorite", $_REQUEST["id"]);
+      $apireturn["forbidden"] = composerlist ("forbidden", $_REQUEST["id"]);
+      $apireturn["playlists"] = playlists ($_REQUEST["id"]);
+      $apireturn["status"]["success"] = "true";
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+  }
+
+  echo savecache ("/user/{$_REQUEST["id"]}/lists.json", apireturn ($apireturn));

@@ -1,0 +1,42 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["tid", "rid", "title"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // updating the recording
+
+      $query = "update track set title='". mysqli_real_escape_string ($mysql, $_REQUEST["title"]). "' where id={$_REQUEST["tid"]} and recording_id={$_REQUEST["rid"]}";
+      mysqli_query ($mysql, $query);
+      $op = mysqli_affected_rows ($mysql);
+
+      if ($op)
+      {
+        $apireturn["status"]["success"] = "true";
+        $apireturn["track"]["title"] = $_REQUEST["title"];
+
+        shell_exec ("rm ". WEBDIR. "/recording/detail/{$_REQUEST["rid"]}.json");
+      }
+      else
+      {
+        $apireturn["status"]["success"] = "false";
+      }
+      
+      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+      $apireturn["track"]["id"] = $_REQUEST["tid"];
+      $apireturn["status"]["updated_rows"] = $op;
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+  }
+
+  echo apireturn ($apireturn);

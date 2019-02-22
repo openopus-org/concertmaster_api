@@ -1,0 +1,57 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["cid", "name", "complete_name", "birth", "epoch"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // everything ok
+
+      $update = Array 
+      (
+        "name" => $_REQUEST["name"], 
+        "complete_name" => $_REQUEST["complete_name"],
+        "birth" => $_REQUEST["birth"],
+        "death" => $_REQUEST["death"],
+        "epoch" => $_REQUEST["epoch"],
+        "recommended" => $_REQUEST["recommended"]
+      );
+
+      $where = Array 
+      (
+        "id" => $_REQUEST["cid"]
+      );
+
+      $op = mysqlupdate ($mysql, "composer", $update, $where);
+
+      if ($op >= 1)
+      {
+        $apireturn["status"]["success"] = "true";
+
+        shell_exec ("rm ". WEBDIR. "/composer/list/ -rf");
+        shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/composer/ -rf");
+        shell_exec ("rm ". WEBDIR. "/work/list/composer/{$_REQUEST["cid"]}/ -rf");
+        shell_exec ("rm ". WEBDIR. "/genre/list/composer/{$_REQUEST["cid"]}.json");
+      }
+      else
+      {
+        $apireturn["status"]["success"] = "false";
+      }
+
+      $apireturn["status"]["updated_rows"] = $op;
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["composer"] = $update;
+      $apireturn["composer"]["id"] = $_REQUEST["cid"];
+  }
+
+  echo apireturn ($apireturn);

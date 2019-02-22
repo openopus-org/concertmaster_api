@@ -1,0 +1,95 @@
+<?
+  include_once ("../../../lib/inc.php");
+  global $forbidden_labels, $historical_labels;
+
+  $goext = ALWAYS_EXT;
+
+  // try to find the work in the database
+
+  $work = mysqlfetch ($mysql, "select epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
+
+  if (!$work)
+  {
+    // if the work doesn't exist, return an error
+
+    $apireturn["status"] = Array ("success"=>"false", "error"=>"Work not found");
+  }
+  else
+  {
+    // work exists, try to find recordings in the database
+
+    $apireturn["status"] = Array ("success"=>"true");
+    $apireturn["work"] = Array
+      (
+        "composer"=>Array
+          (
+            "id"=>$work[0]["composer"],
+            "name"=>$work[0]["name"],
+            "epoch"=>$work[0]["epoch"]
+          ),
+         "id"=>$_REQUEST["id"],
+         "title"=>$work[0]["title"],
+         "genre"=>$work[0]["genre"]
+      );
+
+    $recordings = mysqlfetch ($mysql, "select performer, role, recording.id, singletrack as compilation, label, date_format (recording.year, '%Y') as year, upc, spotify_imgurl from recording, recording_performer where work_id = {$_REQUEST["id"]} and recording_id = id order by recording.id asc");
+
+    if (!$recordings)
+    {
+      // no recording found on the database, fetch externally
+
+      $apireturn["status"]["source"] = "ext";
+      $goext = true;
+    }
+    else
+    {
+      // it's all on the db
+
+      $apireturn["status"]["source"] = "db";
+      $id = -1;
+      $lastid = 0;
+
+      foreach ($recordings as $rec)
+      {
+        if (!in_array ($rec["label"], $forbidden_labels))
+        {
+          if ($lastid != $rec["id"])
+          {
+            $id = $id + 1;
+            $apireturn["recordings"][$id] = Array
+              (
+                "id" => $rec["id"],
+                "label" => $rec["label"],
+                "year" => $rec["year"],
+                "upc" => $rec["upc"],
+                "cover" => $rec["spotify_imgurl"],
+                "historical" => (in_array ($rec["label"], $historical_labels)) ? "true" : "false",
+                "compilation" => ($rec["compilation"]) ? "true" : "false"
+              );
+          }
+
+          $apireturn["recordings"][$id]["performers"][] = Array ("name"=>$rec["performer"],"role"=>$rec["role"]);
+
+          $lastid = $rec["id"];
+        }
+      }
+    }
+
+    // not found, fetch externally
+
+    if ($goext)
+    {
+      $apireturn["recordings"] = fetchrecordings ($_REQUEST["id"]);
+      $apireturn["status"]["stats"] = $apireturn["recordings"]["stats"];
+      unset ($apireturn["recordings"]["stats"]);
+    }
+
+    // compilation second thought
+
+    if (isset ($apireturn["recordings"]))
+    {
+      $apireturn = compilationdigest ($apireturn);
+    }
+  }
+
+  echo savecache ("/recording/list/work/{$_REQUEST["id"]}.json", apireturn ($apireturn));

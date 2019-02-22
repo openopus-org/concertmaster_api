@@ -1,0 +1,58 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  $apireturn["request"]["type"] = "favorite";
+  $apireturn["request"]["item"] = "fav";
+
+  // handling search
+
+  if ($_REQUEST["search"])
+  {
+    if (strlen ($_REQUEST["search"]) > 3)
+    {
+      $where .= "and match (title) against ('{$_REQUEST["search"]}*' IN BOOLEAN MODE)";
+    }
+    else
+    {
+      $goquery = false;
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"Too short search term");
+    }
+  }
+
+  // listing works
+
+  $sql = "select title, work.id as id, genre, composer.epoch, composer.id as composer, composer.name from composer, work, user_work where work.composer_id = composer.id and composer.id = '{$_REQUEST["cid"]}' and user_id='{$_REQUEST["uid"]}' and work.id=work_id and favorite=1 $where order by title asc";
+  $works = mysqlfetch ($mysql, $sql);
+
+  //echo $sql;
+
+  if (!$works)
+  {
+    // if no composers exist, return an error
+
+    $apireturn["status"] = Array ("success"=>"false", "error"=>"No works found");
+  }
+  else
+  {
+    // there are composers, go list'em
+
+    $apireturn["status"] = Array ("success"=>"true", "source"=>"db");
+    $apireturn["composer"] = Array
+      (
+        "id"=>$works[0]["composer"],
+        "name"=>$works[0]["name"],
+        "epoch"=>$works[0]["epoch"]
+      );
+    $apireturn["works"] = arraydelete ($works, ["composer", "name", "epoch"]);
+    $apireturn["status"]["rows"] = sizeof ($apireturn["works"]);
+  }
+
+  if ($_REQUEST["search"])
+  {
+    echo savecache ("/user/{$_REQUEST["uid"]}/composer/{$_REQUEST["cid"]}/work/fav/search/{$_REQUEST["search"]}.json", apireturn ($apireturn));
+  }
+  else
+  {
+    echo savecache ("/user/{$_REQUEST["uid"]}/composer/{$_REQUEST["cid"]}/work/fav.json", apireturn ($apireturn));
+  }
+  

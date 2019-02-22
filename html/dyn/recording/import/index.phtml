@@ -1,0 +1,208 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["sid"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      $token = spotifyauth ();
+      $spotifyalbum = spotifydownparse (SPOTIFYAPI. '/albums/'. $_REQUEST["sid"]. '/', $token);
+      
+      // album details
+
+      $upc = $spotifyalbum["external_ids"]["upc"];
+      $label = $spotifyalbum["label"];
+
+      if ($spotifyalbum["release_date_precision"] == "day") 
+      {
+        $year = $spotifyalbum["release_date"];
+      }
+      else if ($spotifyalbum["release_date_precision"] == "month") 
+      {
+        $year = $spotifyalbum["release_date"]. "-01";
+      }
+      else
+      {
+        $year = $spotifyalbum["release_date"]. "-01-01";
+      }
+
+      $cover = $spotifyalbum["images"][0]["url"];
+
+      // tracks
+
+      $spotifytracks = spotifydownparse (SPOTIFYAPI. '/albums/'. $_REQUEST["sid"]. '/tracks?limit=50', $token);
+      
+      while ($spotifytracks["next"])
+      {
+        $spotifynewtracks = spotifydownparse ($spotifytracks["next"], $token);
+        $spotifytracks["items"] = array_merge ($spotifytracks["items"], $spotifynewtracks["items"]);
+        $spotifytracks["next"] = $spotifynewtracks["next"];
+      }
+
+      $position = 0;
+
+      foreach ($spotifytracks["items"] as $item)
+      {
+        unset ($tracks, $composer, $performers, $thiswork);
+
+        $samework = false;
+
+        // track regular details
+
+        $tracks[] = Array 
+        (
+          "title" => str_replace ($item["artists"][0]["name"], "", str_replace ($item["artists"][0]["name"]. ": ", "", $item["name"])),
+          "cd" => $item["disc_number"],
+          "position" => sizeof ($tracks),
+          "length" => round ($item["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
+          "spotify_trackid" => $item["id"]
+        );
+
+        // composer search
+
+        $match = "match (name, complete_name) against ('". mysqli_real_escape_string ($mysql, $item["artists"][0]["name"]). "*' IN BOOLEAN MODE)";
+        $query = "select id, name, complete_name from composer where $match";
+        $composers = mysqlfetch ($mysql, $query);
+
+        if ($composers)
+        {
+          $composer = Array (
+            "id" => $composers[0]["id"],
+            "name" => $composers[0]["name"],
+            "complete_name" => $composers[0]["complete_name"]
+          );
+
+          // work search 
+
+          $match = "match (title) against ('". mysqli_real_escape_string ($mysql, explode (":", end($tracks)["title"])[0]). "}*' IN BOOLEAN MODE)";
+          $query = "select id, title, genre, $match as relevance from work where $match and composer_id={$composer["id"]} order by relevance desc";
+          $works = mysqlfetch ($mysql, $query);
+        }
+        else
+        {
+          $composer = Array (
+            "complete_name" => $item["artists"][0]["name"]
+          );
+
+          $work = Array 
+          (
+            "title" => end($tracks)["title"],
+            "composer" => $composer
+          );
+
+          $works = false;
+        }
+
+        if ($works)
+        {
+          $mostsimilar = 0;
+
+          foreach ($works as $wkid => $wk)
+          {
+            similar_text ($wk["title"], explode (":", end($tracks)["title"])[0], $similarity);
+            $works[$wkid]["similarity"] = $similarity;
+
+            if ($similarity > $mostsimilar) 
+            {
+              $workitem = $wkid;
+              $mostsimilar = $similarity;
+            }
+          }
+
+          $work = Array 
+          (
+            "title" => $works[$workitem]["title"],
+            "genre" => $works[$workitem]["genre"],
+            "id" => $works[$workitem]["id"],
+            "composer" => $composer
+          );
+
+          $thiswork = $works[$workitem]["id"];
+        }
+        else
+        {
+          $work = Array 
+          (
+            "title" => explode (":", end($tracks)["title"])[0],
+            "composer" => $composer
+          );
+
+          $thiswork = $work["title"];
+        }
+
+        if ($lastwork && $lastwork == $thiswork)
+        {
+          $samework = true;
+          $position++;
+        }
+        else
+        {
+          $position = 0;
+        }
+
+        $lastwork = $thiswork;
+        
+        
+
+        if ($samework)
+        {
+          // append to the previous recording
+
+          $tracks[0]["position"] = $position;
+          $recordings[sizeof($recordings)-1]["tracks"][] = $tracks[0];
+        }
+        else
+        {
+          // new recording
+
+          foreach ($item["artists"] as $artistkey => $artist)
+          {
+            if ($artistkey)
+            {
+              $performers[] = Array
+              (
+                "performer" => $artist["name"],
+                "role" => $artist["type"]
+              );
+            }
+          }
+
+          $recordings[] = Array
+          (
+            "upc" => $upc,
+            "cover" => $cover,
+            "label" => $label,
+            "year" => $year,
+            "work" => $work,
+            "tracks" => $tracks,
+            "performers" => $performers,
+          );
+        }
+      }
+
+      foreach ($titles as $titlekey => $title)
+      {
+        if ($titlekey)
+        {
+          $titlesim[$titlekey] = similar_text ($title, $titles[$titlekey-1], $pc);
+        }
+      }
+
+      print_r ($titlesim);
+
+      $apireturn["status"]["success"] = "true";
+      $apireturn["album"]["spotify_albumid"] = $_REQUEST["sid"];
+      $apireturn["recordings"] = $recordings;
+  }
+
+  echo apireturn ($apireturn);

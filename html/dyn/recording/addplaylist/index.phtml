@@ -1,0 +1,75 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["rid", "pid", "name"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      $goinsert = false;
+
+      if ($_REQUEST["pid"] == "new")
+      {
+        // new playlist
+
+        $insert = Array
+                    (
+                      "user_id" => $_REQUEST["id"],
+                      "name" => $_REQUEST["name"]
+                    );
+
+        mysqlinsert ($mysql, "playlist", $insert);
+        $_REQUEST["pid"] = mysqli_insert_id ($mysql);
+
+        $query = "insert into user_playlist (playlist_id, user_id) values ({$_REQUEST["pid"]}, '{$_REQUEST["id"]}')";
+
+        mysqli_query ($mysql, $query);
+        $goinsert = true;
+      }
+      else
+      {
+        // checking playlist ownership
+
+        $query = "select user_id from playlist where id = '{$_REQUEST["pid"]}'";
+        $check = mysqlfetch ($mysql, $query);
+
+        if ($check[0]["user_id"] == $_REQUEST["id"])
+        {
+          $goinsert = true;
+        }
+      }
+
+      if ($goinsert)
+      {
+        // inserting the recording into the playlist
+
+        $query = "insert into playlist_recording (playlist_id, recording_id, position) values ({$_REQUEST["pid"]}, '{$_REQUEST["rid"]}', 0)
+                    on duplicate key update position = 0";
+
+        mysqli_query ($mysql, $query);
+
+        $apireturn["status"]["success"] = "true";
+      }
+      else
+      {
+        $apireturn["status"]["success"] = "false";
+      }
+
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["playlist"] = ["id"=>$_REQUEST["pid"], "name"=>$_REQUEST["name"]];
+      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+      $apireturn["list"] = playlists ($_REQUEST["id"]);
+  }
+
+  shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

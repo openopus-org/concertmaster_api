@@ -1,0 +1,46 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["rid", "pid"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // checking playlist ownership
+
+      $query = "select user_id from playlist where id = '{$_REQUEST["pid"]}'";
+      $check = mysqlfetch ($mysql, $query);
+
+      if ($check[0]["user_id"] == $_REQUEST["id"])
+      {
+        // removing the recording from the playlist
+
+        $query = "delete from playlist_recording where playlist_id = '{$_REQUEST["pid"]}' and recording_id = '{$_REQUEST["rid"]}'";
+
+        mysqli_query ($mysql, $query);
+
+        $apireturn["status"]["success"] = "true";
+      }
+      else
+      {
+        $apireturn["status"]["success"] = "false";
+      }
+      
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["playlist"]["id"] = $_REQUEST["pid"];
+      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+      $apireturn["list"] = playlists ($_REQUEST["id"]);
+  }
+
+  shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

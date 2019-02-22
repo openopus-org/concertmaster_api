@@ -1,0 +1,16 @@
+<?= file_get_contents ("template.html"); ?>
+
+  <form method="post" action="/dyn/fan/auth/">
+    <label for="email">E-mail:</label>
+    <input type="text" name="email" />
+    <label for="authcode">Authorization Code:</label>
+    <input type="text" name="authcode" />
+    <label for="auth">Device Type:</label>
+    <input type="text" name="devicetype" />
+    <label for="auth">Device ID:</label>
+    <input type="text" name="device" />
+    <label for="auth">Auth:</label>
+    <input type="text" name="auth" />
+    <button type="submit">Submit</button>
+  </form>
+</body>

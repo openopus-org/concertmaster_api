@@ -1,0 +1,59 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // try to find the recording
+
+  $recordings = mysqlfetch ($mysql, "select spotify_absent, recording.uni_id as uni_id, spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, recording.id, label, date_format (recording.year, '%Y') as year, upc, uni_imgurl as cover, performer, role from recording, recording_performer, composer, work, user_recording where composer.id = composer_id and work.id = work_id and recording.id = user_recording.recording_id and user_recording.recording_id = recording.id and recording_performer.recording_id = recording.id and user_id = '{$_REQUEST["id"]}' and plays >= 1 order by lastplay desc, composer.name asc, work.title asc, recording.id asc limit 100");
+  
+  if (!$recordings)
+  {
+    // if the recording doesn't exist, return an error
+
+    $apireturn["status"] = Array ("success"=>"false", "error"=>"No recordings found");
+  }
+  else
+  {
+    // recordings exist, list
+
+    foreach ($recordings as $rec)
+    {
+      if ($lastid != $rec["id"])
+      {
+        $id = $id + 1;
+        $apireturn["recordings"][$id] = Array
+          (
+            "id" => $rec["id"],
+            "label" => $rec["label"],
+            "year" => $rec["year"],
+            "upc" => $rec["upc"],
+            "cover" => PUBLIC_URL. "/cover/". $rec["id"]. "|". str_replace ("/", "-", str_replace ("/images/coverart/", "", $rec["cover"])),
+            "historical" => (in_array ($rec["label"], $historical_labels)) ? "true" : "false",
+            "compilation" => ($rec["compilation"]) ? "true" : "false"
+          );
+      }
+
+      $apireturn["recordings"][$id]["performers"][] = Array ("name"=>$rec["performer"],"role"=>$rec["role"]);
+      $apireturn["recordings"][$id]["work"] = Array
+        (
+          "composer"=>Array
+            (
+              "id"=>$rec["composer"],
+              "name"=>$rec["name"],
+              "epoch"=>$rec["epoch"]
+            ),
+           "id"=>$rec["work"],
+           "title"=>$rec["title"],
+           "genre"=>$rec["genre"],
+        );
+
+      $lastid = $rec["id"];
+    }
+  }
+
+  if (isset ($apireturn["recordings"]))
+  {
+    $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
+  }
+
+  echo savecache ("/user/{$_REQUEST["id"]}/recording/recent.json", apireturn ($apireturn));
+

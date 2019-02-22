@@ -1,0 +1,22 @@
+<?
+  include_once ("../../../lib/inc.php");
+
+  $api = CURL_Internals (SPOTIFYTOKENAPI, false, Array (SPOTIFYID, SPOTIFYSECRET), "refresh_token={$_REQUEST['token']}&grant_type=refresh_token", false);
+  $apireturn["auth"] = json_decode ($api, true);
+
+  if ($apireturn["auth"]["error"] == "invalid_grant")
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Broken token";
+  }
+  else if ($apireturn["auth"]["error"] == "invalid_request")
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "No token provided";
+  }
+  else
+  {
+    $apireturn["status"]["success"] = "true";
+  }
+
+  echo apireturn ($apireturn);

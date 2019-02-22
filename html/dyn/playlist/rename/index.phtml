@@ -1,0 +1,41 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["pid", "name"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // renaming the playlist
+
+      $query = "update playlist set name = '{$_REQUEST["name"]}' where id = '{$_REQUEST["pid"]}' and user_id = '{$_REQUEST["id"]}'";
+
+      mysqli_query ($mysql, $query);
+      $op = mysqli_affected_rows ($mysql);
+
+      if ($op >= 1)
+      {
+        $apireturn["status"]["success"] = "true";
+        $apireturn["playlist"] = ["id"=>$_REQUEST["pid"], "name"=>$_REQUEST["name"]];
+      }
+      else
+      {
+        $apireturn["status"]["success"] = "false";
+      }
+      
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["list"] = playlists ($_REQUEST["id"]);
+  }
+
+  shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

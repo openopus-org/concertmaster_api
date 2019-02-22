@@ -1,0 +1,85 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["rid", "work_id", "label", "uni_id", "upc", "spotify_imgurl"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // updating the recording
+
+      $update = Array 
+      (
+        "work_id" => $_REQUEST["work_id"], 
+        "label" => $_REQUEST["label"],
+        "year" => $_REQUEST["year"],
+        "recommended" => $_REQUEST["recommended"],
+        "compilation" => $_REQUEST["compilation"],
+        "upc" => $_REQUEST["upc"],
+        "uni_id" => $_REQUEST["uni_id"],
+        "spotify_albumid" => $_REQUEST["spotify_albumid"],
+        "spotify_absent" => "0",
+        "spotify_imgurl" => $_REQUEST["spotify_imgurl"]
+      );
+
+      $where = Array 
+      (
+        "id" => $_REQUEST["rid"]
+      );
+
+      $op = mysqlupdate ($mysql, "recording", $update, $where);
+
+      if ($_REQUEST["performers"])
+      {
+        // deleting performers
+
+        mysqli_query ($mysql, "delete from recording_performer where recording_id={$_REQUEST["rid"]}");
+
+        // inserting performers
+
+        foreach (json_decode ($_REQUEST["performers"], true) as $performer)
+        {
+          $inperformers[] = $performer;
+          $inss = array_merge (["recording_id" => $_REQUEST["rid"]], end ($inperformers));
+          mysqlinsert ($mysql, "recording_performer", $inss);
+        }
+      }
+      
+      if ($_REQUEST["tracks"])
+      {
+        // deleting tracks
+
+        mysqli_query ($mysql, "delete from track where recording_id={$_REQUEST["rid"]}");
+
+        // inserting tracks
+
+        foreach (json_decode ($_REQUEST["tracks"], true) as $track)
+        {
+          $intracks[] = $track;
+          $insst = array_merge (["recording_id" => $_REQUEST["rid"]], end ($intracks));
+          mysqlinsert ($mysql, "track", $insst);
+        }
+      }
+
+      $apireturn["status"]["success"] = "true";
+      $apireturn["recording"] = $update;
+      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+      if ($_REQUEST["performers"]) $apireturn["recording"]["performers"] = $inperformers;
+      if ($_REQUEST["tracks"]) $apireturn["recording"]["tracks"] = $intracks;      
+      $apireturn["status"]["updated_rows"] = $op;
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+
+      shell_exec ("rm ". WEBDIR. "/recording/list/work/{$_REQUEST["work_id"]}.json");
+      shell_exec ("rm ". WEBDIR. "/recording/detail/{$_REQUEST["rid"]}.json");
+  }
+
+  echo apireturn ($apireturn);

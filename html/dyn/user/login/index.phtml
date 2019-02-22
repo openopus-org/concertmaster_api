@@ -1,0 +1,38 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // sanity check
+
+  if (!postcheck ($_REQUEST, ["token"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+    // requesting user data from spotify
+
+    $api = CURL_Internals (SPOTIFYAPI. "/me", false, false, "", $_REQUEST["token"]);
+    $tok = json_decode ($api, true);
+
+    if ($tok["id"])
+    {
+      // generating auth code and registering the user to the concertmaster db
+
+      $auth = md5 ($tok["id"]. "-". HASH_SALT);
+
+      $query = "insert into user (spotify_id, auth, name, email, country) values ('{$tok["id"]}', '$auth', '{$tok["display_name"]}', '{$tok["email"]}', '{$tok["country"]}')
+                  on duplicate key update auth = '{$auth}', name = '{$tok["display_name"]}', email = '{$tok["email"]}', country = '{$tok["country"]}'";
+      mysqli_query ($mysql, $query);
+
+      $apireturn["status"]["success"] = "true";
+      $apireturn["user"] = Array ("product" => $tok["product"], "id" => $tok["id"], "name" => $tok["display_name"], "email" => $tok["email"], "country" => $tok["country"], "auth" => $auth);
+    }
+    else
+    {
+      $apireturn["status"]["success"] = "false";
+      $apireturn["status"]["error"] = "Broken token";
+    }
+  }
+
+  echo apireturn ($apireturn);

@@ -1,0 +1,32 @@
+<?
+  include_once ("../../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["cid"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // everything ok
+
+      $query = "insert into user_composer (user_id, composer_id, favorite) values ('{$_REQUEST["id"]}', '{$_REQUEST["cid"]}', 0)
+                  on duplicate key update forbidden = 0";
+
+      mysqli_query ($mysql, $query);
+
+      $apireturn["list"] = composerlist ("forbidden", $_REQUEST["id"]);
+      $apireturn["status"]["success"] = "true";
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["composer"]["id"] = $_REQUEST["cid"];
+  }
+
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

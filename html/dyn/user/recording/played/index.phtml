@@ -1,0 +1,32 @@
+<?
+  include_once ("../../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["rid"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // everything ok
+
+      $time = time ();
+      $query = "insert into user_recording (user_id, recording_id, plays, lastplay) values ('{$_REQUEST["id"]}', '{$_REQUEST["rid"]}', 1, '$time')
+                  on duplicate key update plays = plays+1, lastplay = '$time'";
+
+      mysqli_query ($mysql, $query);
+
+      $apireturn["status"]["success"] = "true";
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+  }
+
+  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  echo apireturn ($apireturn);

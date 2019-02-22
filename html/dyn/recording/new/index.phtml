@@ -1,0 +1,64 @@
+<?
+  include_once ("../../../../lib/inc.php");
+
+  // identity check
+
+  if (!simpleauth ($mysql, $_REQUEST["id"], $_REQUEST["auth"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Authentication failed";
+  }
+  else if (!postcheck ($_REQUEST, ["work_id", "label", "uni_id", "upc", "spotify_imgurl", "performers", "tracks"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+      // inserting the recording
+
+      $insert = Array 
+      (
+        "work_id" => $_REQUEST["work_id"], 
+        "label" => $_REQUEST["label"],
+        "year" => $_REQUEST["year"],
+        "recommended" => $_REQUEST["recommended"],
+        "compilation" => $_REQUEST["compilation"],
+        "upc" => $_REQUEST["upc"],
+        "uni_id" => $_REQUEST["uni_id"],
+        "spotify_albumid" => $_REQUEST["spotify_albumid"],
+        "spotify_absent" => "0",
+        "spotify_imgurl" => $_REQUEST["spotify_imgurl"]
+      );
+
+      $rid = mysqlinsert ($mysql, "recording", $insert);
+
+      // inserting performers
+
+      foreach (json_decode ($_REQUEST["performers"], true) as $performer)
+      {
+        $inperformers[] = $performer;
+        $inss = array_merge (["recording_id" => $rid], end ($inperformers));
+        mysqlinsert ($mysql, "recording_performer", $inss);
+      }
+
+      // inserting tracks
+
+      foreach (json_decode ($_REQUEST["tracks"], true) as $track)
+      {
+        $intracks[] = $track;
+        $insst = array_merge (["recording_id" => $rid], end ($intracks));
+        mysqlinsert ($mysql, "track", $insst);
+      }
+
+      $apireturn["status"]["success"] = "true";
+      $apireturn["user"]["id"] = $_REQUEST["id"];
+      $apireturn["recording"] = $insert;
+      $apireturn["recording"]["id"] = $rid;
+      $apireturn["recording"]["performers"] = $inperformers;
+      $apireturn["recording"]["tracks"] = $intracks;
+
+      shell_exec ("rm ". WEBDIR. "/recording/list/work/{$_REQUEST["work_id"]}.json");
+  }
+
+  echo apireturn ($apireturn);
