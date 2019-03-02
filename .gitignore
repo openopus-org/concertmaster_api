@@ -6,3 +6,4 @@ html/user/*
 html/work/*
 html/composer/*
 log/*
+lib/inc.php

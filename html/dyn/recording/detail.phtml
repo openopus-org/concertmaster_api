@@ -1,11 +1,10 @@
 <?
   include_once ("../../../lib/inc.php");
   global $forbidden_labels, $historical_labels, $timesteps;
-  $goext = ALWAYS_EXT;
 
   // try to find the recording
 
-  $recording = mysqlfetch ($mysql, "select upc, singletrack as compilation, spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, recording.id, label, date_format (recording.year, '%Y') as year, spotify_imgurl, performer, role from recording, recording_performer, composer, work where composer.id = composer_id and work.id = work_id and recording.id = {$_REQUEST["id"]} and recording_id = recording.id order by recording.id asc");
+  $recording = mysqlfetch ($mysql, "select upc, singletrack as compilation, spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, ifnull (searchtitle,title) searchtitle, recording.id, label, date_format (recording.year, '%Y') as year, spotify_imgurl, performer, role from recording, recording_performer, composer, work where composer.id = composer_id and work.id = work_id and recording.id = {$_REQUEST["id"]} and recording_id = recording.id order by recording.id asc");
 
   if (!$recording)
   {
@@ -15,6 +14,11 @@
   }
   else
   {
+    if ($recording[0]["searchtitle"] == $recording[0]["title"])
+    {
+      $recording[0]["searchtitle"] = worksimplifier ($recording[0]["title"]);
+    }
+
     // recording exists, try to find tracks and spotify details in the database
 
     $apireturn["status"] = Array ("success"=>"true");
@@ -28,6 +32,7 @@
           ),
          "id"=>$recording[0]["work"],
          "title"=>$recording[0]["title"],
+         "searchtitle"=>$recording[0]["searchtitle"],
          "genre"=>$recording[0]["genre"],
       );
     $apireturn["recording"] = Array
@@ -54,14 +59,13 @@
         );
     }
 
-    $tracks = mysqlfetch ($mysql, "select id, title, position, length, spotify_trackid from track where recording_id = {$_REQUEST["id"]} order by cd asc, position asc");
+    $tracks = mysqlfetch ($mysql, "select title, position, length, spotify_trackid from track where recording_id = {$_REQUEST["id"]} order by cd asc, position asc");
 
     if (!$tracks)
     {
-      // not found on the database, had to fetch externally
+      // not found on the database
 
-      $apireturn["status"]["source"] = "ext";
-      $goext = true;
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"Tracks not found");
     }
     else
     {
@@ -75,230 +79,6 @@
         $apireturn["recording"]["tracks"][] = $track;
         $apireturn["recording"]["length"] += $track["length"];
       }
-    }
-
-    // not found, fetch externally
-
-    if ($goext)
-    {
-      $token = spotifyauth ();
-      $spotifyalbum = spotifydownparse (SPOTIFYAPI. '/albums/'. $apireturn["recording"]["spotify_albumid"]. '/', $token);
-      
-      // album details
-
-      $upc = $spotifyalbum["external_ids"]["upc"];
-      $label = $spotifyalbum["label"];
-
-      if ($spotifyalbum["release_date_precision"] == "day") 
-      {
-        $year = $spotifyalbum["release_date"];
-      }
-      else if ($spotifyalbum["release_date_precision"] == "month") 
-      {
-        $year = $spotifyalbum["release_date"]. "-01";
-      }
-      else
-      {
-        $year = $spotifyalbum["release_date"]. "-01-01";
-      }
-
-      $cover = $spotifyalbum["images"][0]["url"];
-
-      // tracks
-
-      $spotifytracks = spotifydownparse (SPOTIFYAPI. '/albums/'. $apireturn["recording"]["spotify_albumid"]. '/tracks?limit=50', $token);
-      
-      while ($spotifytracks["next"])
-      {
-        $spotifynewtracks = spotifydownparse ($spotifytracks["next"], $token);
-        $spotifytracks["items"] = array_merge ($spotifytracks["items"], $spotifynewtracks["items"]);
-        $spotifytracks["next"] = $spotifynewtracks["next"];
-      }
-
-      //print_r ($spotifytracks);
-
-      $position = 0;
-
-      foreach ($spotifytracks["items"] as $item)
-      {
-        unset ($tracks, $composer, $performers, $thiswork);
-
-        $samework = false;
-
-        // track regular details
-
-        $title = str_replace (end (explode (" ", $item["artists"][0]["name"])), "", str_replace (end (explode (" ", $item["artists"][0]["name"])). ": ", "", str_replace ($item["artists"][0]["name"], "", str_replace ($item["artists"][0]["name"]. ": ", "", $item["name"]))));
-
-        $tracks[] = Array 
-        (
-          "search_title" => $title,
-          "title" => trim (end (explode (":", $title))),
-          "cd" => $item["disc_number"],
-          "position" => sizeof ($tracks),
-          "length" => round ($item["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
-          "spotify_trackid" => $item["id"]
-        );
-
-        // composer search
-
-        $match = "match (name, complete_name) against ('". mysqli_real_escape_string ($mysql, $item["artists"][0]["name"]). "*' IN BOOLEAN MODE)";
-        $query = "select id, name, complete_name from composer where $match";
-        $composers = mysqlfetch ($mysql, $query);
-
-        //print_r ($composers);
-
-        if ($composers)
-        {
-          $composer = Array (
-            "id" => $composers[0]["id"],
-            "name" => $composers[0]["name"],
-            "complete_name" => $composers[0]["complete_name"]
-          );
-
-          // creating works titles reference
-
-          $query = "select id, title, genre from work where composer_id={$composer["id"]} order by id desc";
-          $works = mysqlfetch ($mysql, $query);
-
-          //print_r ($works);
-          //echo $query;
-        }
-        else
-        {
-          $composer = Array (
-            "complete_name" => $item["artists"][0]["name"]
-          );
-
-          $work = Array 
-          (
-            "title" => end($tracks)["title"],
-            "composer" => $composer
-          );
-
-          $works = false;
-        }
-
-        //print_r ($works);
-
-        if ($works)
-        {
-          $mostsimilar = 0;
-
-          foreach ($works as $wkid => $wk)
-          {
-            similar_text ($wk["title"], explode (":", end($tracks)["search_title"])[0], $similarity);
-            $works[$wkid]["similarity"] = $similarity;
-
-            if ($similarity > $mostsimilar) 
-            {
-              $workitem = $wkid;
-              $mostsimilar = $similarity;
-            }
-          }
-
-          if ($mostsimilar > MIN_SIMILAR)
-          {
-            $work = Array 
-              (
-                //"options" => $works,
-                "similarity" => $works[$workitem]["similarity"],
-                "title" => $works[$workitem]["title"],
-                "genre" => $works[$workitem]["genre"],
-                "id" => $works[$workitem]["id"],
-                "composer" => $composer
-              );
-
-            $thiswork = $works[$workitem]["id"];
-          }
-          else
-          {
-            $work = Array 
-              (
-                "title" => explode (":", end($tracks)["search_title"])[0],
-                "composer" => $composer
-              );
-
-            $thiswork = $work["title"];
-          }
-        }
-        else
-        {
-          $work = Array 
-            (
-              "title" => explode (":", end($tracks)["search_title"])[0],
-              "composer" => $composer
-            );
-
-          $thiswork = $work["title"];
-        }
-
-        if ($lastwork && $lastwork == $thiswork)
-        {
-          $samework = true;
-          $position++;
-        }
-        else
-        {
-          $position = 0;
-        }
-
-        $lastwork = $thiswork;
-        
-        if ($samework)
-        {
-          // append to the previous recording
-
-          $tracks[0]["position"] = $position;
-          $recordings[sizeof($recordings)-1]["tracks"][] = $tracks[0];
-        }
-        else
-        {
-          // new recording
-
-          foreach ($item["artists"] as $artistkey => $artist)
-          {
-            if ($artistkey && !strpos ($artist["name"], "/"))
-            {
-              $performers[] = Array
-                (
-                  "name" => $artist["name"],
-                  "role" => $artist["type"]
-                );
-            }
-          }
-
-          $recordings[] = Array
-          (
-            "upc" => $upc,
-            "cover" => $cover,
-            "label" => $label,
-            "year" => $year,
-            "work" => $work,
-            "tracks" => $tracks,
-            "performers" => $performers,
-          );
-        }
-      }
-
-      print_r ($recordings);
-
-      foreach ($recordings as $recording)
-      {
-        if ($recording["work"]["id"] == $apireturn["work"]["id"])
-        {
-          $apireturn["recording"]["upc"] = $recording["upc"];
-          $apireturn["recording"]["label"] = $recording["label"];
-          $apireturn["recording"]["tracks"] = $recording["tracks"];
-          $apireturn["recording"]["performers"] = $recording["performers"];
-
-          foreach ($recording["tracks"] as $rectrack)
-          {
-            $apireturn["recording"]["length"] += $rectrack["length"];
-          }
-        }
-      }
-
-      // end of external fetch
     }
   }
 

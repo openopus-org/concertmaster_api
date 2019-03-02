@@ -1,6 +1,8 @@
 # concertmaster_api
 Classical music metadata API for Spotify
 
+It's mainly the data provider for the Concertmaster player (https://github.com/adrianosbr/concertmaster_player), but it can be used in any application.
+
 # Steps to install
 
 1. Clone the git repository

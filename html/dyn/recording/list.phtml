@@ -6,8 +6,8 @@
 
   // try to find the work in the database
 
-  $work = mysqlfetch ($mysql, "select epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
-
+  $work = mysqlfetch ($mysql, "select epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, ifnull (lower(searchtitle),lower(title)) searchtitle, lower(alternatetitles) alternatetitles, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
+ 
   if (!$work)
   {
     // if the work doesn't exist, return an error
@@ -17,6 +17,11 @@
   else
   {
     // work exists, try to find recordings in the database
+
+    if ($work[0]["searchtitle"] == strtolower ($work[0]["title"]))
+    {
+      $work[0]["searchtitle"] = worksimplifier ($work[0]["title"]);
+    }
 
     $apireturn["status"] = Array ("success"=>"true");
     $apireturn["work"] = Array
@@ -29,6 +34,7 @@
           ),
          "id"=>$_REQUEST["id"],
          "title"=>$work[0]["title"],
+         "searchtitle"=>$work[0]["searchtitle"],
          "genre"=>$work[0]["genre"]
       );
 
@@ -84,7 +90,7 @@
       unset ($apireturn["recordings"]["stats"]);
     }
 
-    // compilation second thought
+    // compilation detection
 
     if (isset ($apireturn["recordings"]))
     {

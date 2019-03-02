@@ -1,7 +1,38 @@
 <?
-  // simple slug generator
+  // slug generator
 
-  function slug ($phrase)
+  function slug ($string, $replace = array(), $delimiter = '-') 
+  {
+    // https://github.com/phalcon/incubator/blob/master/Library/Phalcon/Utils/Slug.php
+
+    if (!extension_loaded ('iconv')) 
+    {
+      throw new Exception ('iconv module not loaded');
+    }
+
+    // save the old locale and set the new locale to UTF-8
+    
+    $oldLocale = setlocale (LC_ALL, '0');
+    setlocale (LC_ALL, 'en_US.UTF-8');
+    $clean = iconv ('UTF-8', 'ASCII//TRANSLIT', $string);
+    
+    if (!empty($replace))
+    {
+      $clean = str_replace ((array) $replace, ' ', $clean);
+    }
+
+    $clean = preg_replace ("/[^a-zA-Z0-9\/_|+ -]/", '', $clean);
+    $clean = strtolower ($clean);
+    $clean = preg_replace("/[\/_|+ -]+/", $delimiter, $clean);
+    $clean = trim ($clean, $delimiter);
+
+    // revert back to the old locale
+    
+    setlocale (LC_ALL, $oldLocale);
+    return $clean;
+  }
+
+  function oldslug ($phrase)
   {
         $result = strtolower($phrase);
         $result = preg_replace ("/[^a-z0-9\s-]/", "", $result);
@@ -29,7 +60,29 @@
     return mysqli_insert_id ($mysql);
   }
 
-  // simple mysql update
+  // multiline mysql insert
+
+  function mysqlmultinsert ($mysql, $table, $lines)
+  {
+    foreach ($lines as $line)
+    {
+      foreach ($line as $ini => $ins)
+      {
+        $insert[$ini] = mysqli_real_escape_string ($mysql, $ins);
+      }
+
+      $values[] = "('". implode ("','", $insert). "')";
+    }
+
+    $query = "insert into {$table} (". implode (", ", array_keys ($lines[0])). ") values ". implode (", ", $values);
+    $query = str_replace ("''", "null", $query);
+    
+    mysqli_query ($mysql, $query);
+
+    return mysqli_insert_id ($mysql);
+  }
+
+  // mysql update
 
   function mysqlupdate ($mysql, $table, $update, $where)
   {
@@ -46,7 +99,7 @@
     return mysqli_affected_rows ($mysql);
   }
 
-  // simple mysql query to assoc array
+  // mysql query to assoc array
 
   function mysqlfetch ($mysql, $query)
   {
@@ -453,9 +506,12 @@
         mkdir ($dirname, 0777, true);
       }
 
-      $fp = fopen ($filename, "w");
-      fwrite ($fp, str_replace (SOFTWARENAME. "-dyn", SOFTWARENAME. "-cache", $content));
-      fclose ($fp);
+      if (!ALWAYS_EXT)
+      {
+        $fp = fopen ($filename, "w");
+        fwrite ($fp, str_replace (SOFTWARENAME. "-dyn", SOFTWARENAME. "-cache", $content));
+        fclose ($fp);
+      }
 
       return $content;
   }
@@ -625,77 +681,43 @@
 
     return $return;
   }
-
-  function oldfetchrecordings ($wid)
+  
+  function guessrole ($name, $rldb)
   {
-    //-------- old ---------
+    $name = preg_replace ('/^((sir|lord|dame) )/i', '', $name);
 
-    $html = CURL_Internals (UNIAPI. "/work/". $uid.".html", false, false, false, false);
-    $html = preg_replace ('/(\r\n|\n|\r)/', '', $html);
+    global $orchestra_kw, $ensemble_kw, $choir_kw;
 
-    // composer
-
-    $patternc = '/<li><a href="\/composer\/(.*).html">(.*)\.(.*)<\/a><\/li>/Uis';
-    preg_match ($patternc, $html, $matchesc);
-
-    // tracks
-
-    $patternf = '/<div class="workInfo">(.*)<!-- musicology and review data -->/';
-    preg_match ($patternf, $html, $matchesf);
-
-    $patternff = '/<ul><li>(.*)<\/li><\/ul>/Uims';
-    preg_match_all ($patternff, $matchesf[1], $matchesff);
-
-    // performances
-
-    $pattern = '/(var workJSON = {(.*)}}},)/';
-    preg_match ($pattern, $html, $matches);
-    $array = json_decode('{'. $matches[2]. '}}}', true);
-
-    //print_r ($array);
-
-    foreach ($array["performances"] as $perf)
+    foreach ($choir_kw as $kw)
     {
-      $nperf[$perf["id"]] = $perf;
+      if (stripos ($name, $kw) !== false)
+      {
+        return "Choir";
+      }
     }
-
-    foreach ($nperf as $pid => $perfo)
+    
+    foreach ($ensemble_kw as $kw)
     {
-      $nperf[$pid]["work_id"] = $work[0]["uni_id"];
-      $nperf[$pid]["performance_id"] = $pid;
-      $nperf[$pid]["composer_name"] = $matchesc[3];
-      $nperf[$pid]["composer_id"] = $matchesc[1];
-
-      if (@$nperf[$pid]["album"]) { $nperf[$pid]["album"] = $array["albums"][$nperf[$pid]["album"]]; }
-
-      if (sizeof ($matchesff[1]) > 1)
+      if (stripos ($name, $kw) !== false)
       {
-        $nperf[$pid]["work_multitrack"] = true;
-
-        if ($nperf[$pid]["tracks"] <= 1)
-        {
-          $nperf[$pid]["performance_compilation"] = true;
-        }
-        else
-        {
-          $nperf[$pid]["performance_compilation"] = false;
-        }
-      }
-      else
-      {
-        $nperf[$pid]["work_multitrack"] = false;
-        $nperf[$pid]["performance_compilation"] = false;
-      }
-
-      $nperf[$pid]["work"] = $array["works"][$nperf[$pid]["work"]];
-
-      foreach ($perfo["performers"] as $gid => $gente)
-      {
-        $nperf[$pid]["performers"][$gid] = array_merge($nperf[$pid]["performers"][$gid], $array["performers"][$gente["id"]]);
+        return "Ensemble";
       }
     }
 
-    return save_recordings ($mysql, (array) $nperf, Array ("id"=>$wid));
+    foreach ($orchestra_kw as $kw)
+    {
+      if (stripos ($name, $kw) !== false)
+      {
+        return "Orchestra";
+      }
+    }
+
+    if ($rldb[slug ($name)])
+    {
+      return $rldb[slug ($name)];
+    }
+
+    return "Artist";
   }
 
   function fetchrecordings ($wid)
@@ -703,19 +725,47 @@
     global $mysql, $work;
     $ii = -1;
 
+    // creating performer roles reference
+
+    $query = "select performer, role FROM performersdigest where qty > 5 order by qty asc";
+    $rolesdb = mysqlfetch ($mysql, $query);
+
+    foreach ($rolesdb as $rl)
+    {
+      $rldb[slug (preg_replace ('/^((sir|lord|dame) )/i', '', $rl["performer"]))] = $rl["role"];
+    }
+
     // creating works titles reference
 
-    $query = "select id, title, genre from work where composer_id={$work[0]["composer"]} order by id desc";
+    $query = "select id, lower(title) title, genre, ifnull (lower(searchtitle),lower(title)) searchtitle from work where composer_id={$work[0]["composer"]} order by id desc";
     $worksdb = mysqlfetch ($mysql, $query);
 
     foreach ($worksdb as $wk)
     {
-      similar_text ($work[0]["title"], $wk["title"], $similarity);
+      similar_text (strtolower ($work[0]["title"])  , $wk["title"], $similarity);
+      
+      if ($wk["searchtitle"] == strtolower ($wk["title"]))
+      {
+        $wk["searchtitle"] = worksimplifier ($wk["title"]);
+      }
 
       if ($similarity > MIN_SIMILAR)
       {
-        $wkdb[] = $wk;
+        $wkdb[] = array_merge ($wk, Array ("similarity" => $similarity));
       }
+    }
+
+    // adding alternate titles of the work to the reference
+
+    foreach (explode (",", $work[0]["alternatetitles"]) as $alttitle)
+    {
+      $wkdb[] = Array 
+        (
+          "id" => $work[0]["id"],
+          "title" => strtolower ($work[0]["title"]),
+          "genre" => $work[0]["genre"],
+          "searchtitle" => $alttitle
+        );
     }
 
     //echo $query;
@@ -726,7 +776,7 @@
     // searching spotify
 
     $token = spotifyauth ();
-    $albums = spotifydownparse (SPOTIFYAPI. "/search/?limit=50&type=track&q=". urlencode (worksimplifier ($work[0]["title"]). " artist:{$work[0]["complete_name"]}"), $token);
+    $albums = spotifydownparse (SPOTIFYAPI. "/search/?limit=50&type=track&q=". urlencode ($work[0]["searchtitle"]. " artist:{$work[0]["complete_name"]}"), $token);
 
     while ($albums["tracks"]["next"])
     {
@@ -735,30 +785,58 @@
       $albums["tracks"]["next"] = $morealbums["tracks"]["next"];
     }
 
-    //print_r ($albums);
+    //print_r ($albums["tracks"]["items"]);
 
     foreach ($albums["tracks"]["items"] as $kalb => $alb)
     {
-      similar_text ($work[0]["title"], explode (":", $alb["name"])[0], $similarity);
+      $alb["name"] = str_replace (end (explode (" ", $alb["artists"][0]["name"])), "", str_replace (end (explode (" ", $alb["artists"][0]["name"])). ": ", "", str_replace ($alb["artists"][0]["name"], "", str_replace ($alb["artists"][0]["name"]. ": ", "", $alb["name"]))));
+      $alb["name"] = preg_replace ('/^(( )*( |\,|\(|\'|\"|\-|\;|\:)( )*)/i', '', $alb["name"], 1);
+
+      //similar_text ($work[0]["title"], explode (":", $alb["name"])[0], $similarity);
+      similar_text ($work[0]["searchtitle"], worksimplifier (explode (":", $alb["name"])[0]), $similarity);
       
-      //if ($similarity > $spotres[$alb["album"]["id"]]["mostsimilar"] && $similarity > MIN_SIMILAR) 
+      /*
+      $albunsfound[$alb["album"]["id"]][] = Array 
+        (
+          "track_title" => $alb["name"],
+          "search_title" => $work[0]["searchtitle"],
+          "simplified_track_title" => worksimplifier (explode (":", $alb["name"])[0]),
+          "similarity" => $similarity
+        );
+      */
+      //if ($similarity > $spotres[$alb["album"]["id"]]["mostsimilar"] && $similarity > MIN_SIMILAR)
+
+      foreach (explode (",", $work[0]["alternatetitles"]) as $alttitle)
+      {
+        similar_text ($alttitle, worksimplifier (explode (":", $alb["name"])[0]), $othersimilarity);
+
+        if ($othersimilarity > $similarity)
+        {
+          $similarity = $othersimilarity;
+        }
+      }
+
       if ($similarity > MIN_SIMILAR) 
       {
         $simwkdb = 0;
         $mostwkdb = 0;
 
-        foreach ($worksdb as $wk)
+        foreach ($wkdb as $wk)
         {
-          similar_text ($wk["title"], explode (":", $alb["name"])[0], $sim);
+          //similar_text ($wk["title"], explode (":", $alb["name"])[0], $sim);
+          similar_text ($wk["searchtitle"], worksimplifier (explode (":", $alb["name"])[0]), $sim);
+          
+          //if ($sim > MIN_SIMILAR) echo $wk["id"]. " - ". $sim. " - ". $wk["searchtitle"]. " - ". worksimplifier (explode (":", $alb["name"])[0]). "\n[". $alb["name"]. "]\n\n";
+          
           if ($sim > $simwkdb) 
           {
             $simwkdb = $sim;
             $mostwkdb = $wk["id"];
-            $mostwkdbtitle = $wk["title"];
+            $mostwkdbtitle = $wk["searchtitle"];
           }
         }
 
-        //echo $mostwkdb. " - ". $mostwkdbtitle. "\n[". $alb["name"]. "]\n\n";
+        //echo " GUESSED: ". $mostwkdb. " - ". $mostwkdbtitle. "\n[". $alb["name"]. "]\n\n";
 
         if ($mostwkdb == $work[0]["id"])
         {
@@ -774,19 +852,43 @@
 
           if (sizeof ($performers))
           {
+            if ($alb["album"]["release_date_precision"] == "day") 
+            {
+              $year = $alb["album"]["release_date"];
+            }
+            else if ($alb["album"]["release_date_precision"] == "month") 
+            {
+              $year = $alb["album"]["release_date"]. "-01";
+            }
+            else
+            {
+              $year = $alb["album"]["release_date"]. "-01-01";
+            }
+
             //$spotres[$alb["album"]["id"]] = Array 
             $spotres[$alb["album"]["id"]][] = Array 
             (
-              "similarity_between" => Array ($work[0]["title"], explode (":", $alb["name"])[0]),
+              "similarity_between" => Array ($work[0]["searchtitle"], worksimplifier (explode (":", $alb["name"])[0])),
               "mostsimilar" => $similarity,
-              "track_name" => $alb["name"],
+              "full_title" => $alb["name"],
+              "title" => trim (end (explode (":", $alb["name"]))),
               "similarity" => $similarity,
               "work_id" => $wid,
-              "year" => $alb["album"]["release_date"],
+              "year" => $year,
               "spotify_imgurl" => $alb["album"]["images"][0]["url"],
               "spotify_albumid" => $alb["album"]["id"],
               "performers" => $performers,
               "tracks" => sizeof ($spotres[$alb["album"]["id"]])+1
+            );
+
+            $tracksres[$alb["album"]["id"]][] = Array 
+            (
+              "full_title" => $alb["name"],
+              "title" => trim (end (explode (":", $alb["name"]))),
+              "cd" => $alb["disc_number"],
+              "position" => $alb["track_number"],
+              "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
+              "spotify_trackid" => $alb["id"]
             );
           }
 
@@ -803,7 +905,9 @@
       );
     
     //print_r ($stats);
+    //print_r ($albunsfound);
     //print_r ($spotres);
+    //print_r ($tracksres);
 
     foreach ($spotres as $kalb => $salb)
     {
@@ -822,30 +926,61 @@
         );
 
       //print_r ($insert);
-      mysqlinsert ($mysql, "recording", $insert);
-      $rid = mysqli_insert_id ($mysql);
+
+      if (!ALWAYS_EXT)
+      {
+        mysqlinsert ($mysql, "recording", $insert);
+        $rid = mysqli_insert_id ($mysql);
+        unset ($trinsert);
+
+        foreach ($tracksres[$alb["spotify_albumid"]] as $tart)
+        {
+          $trinsert[] = Array
+          (
+            "recording_id" => $rid,
+            "cd" => $tart["cd"],
+            "position" => $tart["position"],
+            "length" => $tart["length"],
+            "title" => $tart["title"],
+            "spotify_trackid" => $tart["spotify_trackid"]
+          );
+        }
+
+        mysqlmultinsert ($mysql, "track", $trinsert);
+      }
+      else
+      {
+        $rid = 0;
+      }
 
       $return[$ii] = Array
         (
           "id" => $rid,
-          "year" => explode ("-", $album["release_date"])[0],
+          "year" => explode ("-", $alb["year"])[0],
           "cover" => $alb["spotify_imgurl"],
           "spotify_albumid" => $alb["spotify_albumid"],
           "compilation" => ($alb["tracks"] > 1) ? "false" : "true"
         );
 
+      unset ($pfinsert);
+
       foreach ($alb["performers"] as $kart => $art)
       {
-        $pfinsert = Array
+        $pfinsert[] = Array
           (
             "recording_id" => $rid,
             "performer" => $art,
-            "role" => "artist"            
+            "role" => guessrole ($art, $rldb)         
           );
 
         //print_r ($pfinsert);
-        mysqlinsert ($mysql, "recording_performer", $pfinsert);
-        $return[$ii]["performers"][] = Array ("name" => $pfinsert["performer"], "role" => $pfinsert["role"]);
+
+        $return[$ii]["performers"][] = Array ("name" => end($pfinsert)["performer"], "role" => end($pfinsert)["role"]);
+      }
+
+      if (!ALWAYS_EXT)
+      {
+        mysqlmultinsert ($mysql, "recording_performer", $pfinsert);
       }
     }
 
@@ -873,9 +1008,10 @@
 
   function worksimplifier ($name)
   {
-    $pattern = '/(\,|\(|\').*/i';
+    $name = strtolower ($name);
+    $pattern = '/(\,|\(|\'|\"|\-|\;).*/i';
     $stepone = preg_replace ($pattern, '', $name);
     
-    $pattern = '/ in .\b( (minor|major|sharp major|sharp minor|flat major|flat minor))?/i';
+    $pattern = '/ in .\b( (minor|major|sharp major|sharp minor|flat major|flat minor|flat|sharp))?/i';
     return preg_replace ($pattern, '', $stepone);
   }
