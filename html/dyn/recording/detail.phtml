@@ -4,7 +4,7 @@
 
   // try to find the recording
 
-  $recording = mysqlfetch ($mysql, "select upc, singletrack as compilation, spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, ifnull (searchtitle,title) searchtitle, recording.id, label, date_format (recording.year, '%Y') as year, spotify_imgurl, performer, role from recording, recording_performer, composer, work where composer.id = composer_id and work.id = work_id and recording.id = {$_REQUEST["id"]} and recording_id = recording.id order by recording.id asc");
+  $recording = mysqlfetch ($mysql, "select work.alternatetitles, composer.complete_name, upc, singletrack as compilation, spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, ifnull (searchtitle,title) searchtitle, recording.id, label, date_format (recording.year, '%Y') as year, spotify_imgurl, performer, role from recording, recording_performer, composer, work where composer.id = composer_id and work.id = work_id and recording.id = {$_REQUEST["id"]} and recording_id = recording.id order by recording.id asc");
 
   if (!$recording)
   {
@@ -14,14 +14,13 @@
   }
   else
   {
+    // recording exists
+
     if ($recording[0]["searchtitle"] == $recording[0]["title"])
     {
       $recording[0]["searchtitle"] = worksimplifier ($recording[0]["title"]);
     }
 
-    // recording exists, try to find tracks and spotify details in the database
-
-    $apireturn["status"] = Array ("success"=>"true");
     $apireturn["work"] = Array
       (
         "composer"=>Array
@@ -59,20 +58,65 @@
         );
     }
 
-    $tracks = mysqlfetch ($mysql, "select title, position, length, spotify_trackid from track where recording_id = {$_REQUEST["id"]} order by cd asc, position asc");
+    // fetching tracks
+
+    if (!ALWAYS_EXT)
+    {
+      $tracks = mysqlfetch ($mysql, "select title, position, length, spotify_trackid from track where recording_id = {$_REQUEST["id"]} order by cd asc, position asc");
+    }
+
+    $apireturn["recording"]["length"] = 0;
 
     if (!$tracks)
     {
-      // not found on the database
+      // not found on the database, go ext
 
-      $apireturn["status"] = Array ("success"=>"false", "error"=>"Tracks not found");
+      $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
+
+      $work[0] = Array 
+        (
+          "composer" => $recording[0]["composer"],
+          "title" => $recording[0]["title"],
+          "alternatetitles" => $recording[0]["alternatetitles"],
+          "id" => $recording[0]["work"], 
+          "genre" => $recording[0]["genre"],
+          "searchtitle" => $recording[0]["searchtitle"],
+          "complete_name" => $recording[0]["complete_name"],
+          "spotify_albumid" => $recording[0]["spotify_albumid"]
+        );
+
+      $spot = fetchspotify ($work, "tracks");
+      $spotres = $spot["items"];
+      $return["stats"] = $spot["stats"];
+
+      $apireturn["recording"]["label"] = $spot["extras"]["label"];
+      $apireturn["recording"]["upc"] = $spot["extras"]["upc"];
+
+      mysqlupdate ($mysql, "recording", $spot["extras"], Array ("id"=>$_REQUEST["id"]));
+  
+      foreach ($spotres as $tart)
+      {
+        $trinsert[] = Array
+        (
+          "recording_id" => $recording[0]["id"],
+          "cd" => $tart["cd"],
+          "position" => $tart["position"],
+          "length" => $tart["length"],
+          "title" => $tart["title"],
+          "spotify_trackid" => $tart["spotify_trackid"]
+        );
+
+        $apireturn["recording"]["tracks"][] = end ($trinsert);
+        $apireturn["recording"]["length"] += end($trinsert)["length"];
+      }
+
+      mysqlmultinsert ($mysql, "track", $trinsert);
     }
     else
     {
       // it's all on the db
 
-      $apireturn["status"]["source"] = "db";
-      $apireturn["recording"]["length"] = 0;
+      $apireturn["status"] = Array ("success"=>"true", "source"=>"db");
 
       foreach ($tracks as $track)
       {

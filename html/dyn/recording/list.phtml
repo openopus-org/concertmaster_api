@@ -85,7 +85,7 @@
 
     if ($goext)
     {
-      $apireturn["recordings"] = fetchrecordings ($_REQUEST["id"]);
+      $apireturn["recordings"] = fetchrecordings ($work);
       $apireturn["status"]["stats"] = $apireturn["recordings"]["stats"];
       unset ($apireturn["recordings"]["stats"]);
     }

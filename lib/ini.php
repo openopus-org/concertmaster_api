@@ -18,6 +18,9 @@
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
   define ("MIN_COMPIL_RATIO", 0.6);
+  define ("MIN_RELEVANCE_PERFORMER", 5);
+  define ("SAPI_ITEMS", 50);
+  define ("SAPI_PAGES", 10);
   define ("API_RETURN", "json");
   define ("HASH_SALT", "vUJmLwFgniCBmqcreBbsX9Jb");
 
@@ -33,7 +36,7 @@
 
   // performer roles keywords
 
-  $orchestra_kw = ['orchestra', 'symphony', 'philharmonic', 'philharmoniker', 'philharmonie', 'symphoniker', 'orchester', 'academy', 'orchestre', 'orchestra', 'orquesta', 'orquestra', 'orkester', 'philharmonia', 'academie', 'academia', 'accademia', 'akademie', 'society', 'societe', 'societa', 'sinfonietta', 'camerata', 'sinfonia', 'staatskapelle', 'strings', 'collegium'];
+  $orchestra_kw = ['orchestra', 'symphony', 'philharmonic', 'philharmoniker', 'philharmonie', 'symphoniker', 'orchester', 'academy', 'orchestre', 'orchestra', 'orquesta', 'orquestra', 'orkester', 'philharmonia', 'academie', 'academia', 'accademia', 'akademie', 'society', 'societe', 'societa', 'sinfonietta', 'camerata', 'sinfonia', 'staatskapelle', 'strings', 'collegium', 'consortium'];
   $ensemble_kw = ['ensemble', 'quartet', 'quintet', 'trio', 'duo', 'players', 'solisti', 'chamber'];
   $choir_kw = ['choir', 'chorus', 'choral', 'cantorum', 'coro', 'singers', 'kammerchor', 'voices', 'kantorei', 'rundfunkchor', 'singakademie', 'vocale', 'knabenchor', 'singverein', 'sangerknaben', 'scholars'];
 
