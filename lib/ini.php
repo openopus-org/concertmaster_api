@@ -17,10 +17,10 @@
   define ("USERAGENT", SOFTWARENAME. "/" . SOFTWAREVERSION. " ( ". SOFTWAREMAIL. " )");
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
-  define ("MIN_COMPIL_RATIO", 0.6);
+  define ("MIN_COMPIL_RATIO", 0.8);
   define ("MIN_RELEVANCE_PERFORMER", 5);
   define ("SAPI_ITEMS", 50);
-  define ("SAPI_PAGES", 10);
+  define ("SAPI_PAGES", 5);
   define ("API_RETURN", "json");
   define ("HASH_SALT", "vUJmLwFgniCBmqcreBbsX9Jb");
 

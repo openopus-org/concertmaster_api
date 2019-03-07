@@ -1,8 +1,6 @@
 <?
   include_once ("../../../lib/inc.php");
 
-  $goext = ALWAYS_EXT;
-
   // listing genres
 
   $sql = "select genre, composer.epoch, composer.id as composer, composer.name from composer, work where work.composer_id = composer.id and composer.id = '{$_REQUEST["composer"]}' group by genre order by genre asc";

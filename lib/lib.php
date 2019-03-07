@@ -32,17 +32,6 @@
     return $clean;
   }
 
-  function oldslug ($phrase)
-  {
-        $result = strtolower($phrase);
-        $result = preg_replace ("/[^a-z0-9\s-]/", "", $result);
-        $result = trim (preg_replace("/[\s-]+/", " ", $result));
-        $result = trim(substr($result, 0, 100));
-        $result = preg_replace ("/\s/", "-", $result);
-
-        return $result;
-  }
-
   // simple mysql insert
 
   function mysqlinsert ($mysql, $table, $insert)
@@ -151,12 +140,6 @@
 
   // api wrapers
 
-  function rovidownparse ($url)
-  {
-  	$sig = md5 (ROVIKEY. ROVISECRET. time ());
-    return apidownparse ($url. "&format=json&apikey=". ROVIKEY. "&sig=". $sig, "json", false);
-  }
-
   function spotifydownparse ($url, $token)
   {
     return apidownparse ($url, "json", $token);
@@ -238,234 +221,6 @@
     return $tok["access_token"];
   }
 
-  // upc check function
-
-  function upc_checkdigit ($upc_code)
-  {
-    $odd_total  = 0;
-    $even_total = 0;
-
-    for($i=0; $i<strlen($upc_code); $i++)
-    {
-        if((($i+1)%2) == 0) {
-            /* Sum even digits */
-            $even_total += $upc_code[$i];
-        } else {
-            /* Sum odd digits */
-            $odd_total += $upc_code[$i];
-        }
-    }
-
-   	if (strlen ($upc_code) == 11)
-   	{
-      	$sum = (3 * $odd_total) + $even_total;
-   	}
-   	else if (strlen ($upc_code) == 12)
-   	{
-   		$sum = (3 * $even_total) + $odd_total;
-   	}
-    else
-    {
-      $sum = 0;
-    }
-
-    /* Get the remainder MOD 10*/
-    $check_digit = $sum % 10;
-
-    /* If the result is not zero, subtract the result from ten. */
-    return ($check_digit > 0) ? 10 - $check_digit : $check_digit;
-  }
-
-  // receives an uni array and insert into cm's db
-
-  function save_recordings ($mysql, $array, $p)
-  {
-    global $forbidden_labels, $historical_labels;
-
-    $ii = -1;
-    if (sizeof ($array))
-    {
-      foreach ($array as $performance)
-      {
-        $ii = $ii + 1;
-
-        // looking for the album
-
-        if (isset ($performance["album"]))
-        {
-          $album = $performance["album"];
-
-          if (!isset ($album["releaseDate"]))
-          {
-            $album["releaseDate"] = "2000";
-          }
-
-          // changing date format
-
-          $pattern = '/([0-9])+$/i';
-          $replacement = '$2';
-          preg_match ($pattern, $album["releaseDate"], $matches);
-
-          if (is_array ($matches))
-          {
-            if (count($matches) >= 1)
-            {
-              $album["releaseDate"] = $matches[0]."-01-01";
-            }
-          }
-
-          // inserting
-
-          $insert = Array
-          (
-            "work_id" => $p["id"],
-            "label" => $album["label"],
-            "year" => $album["releaseDate"],
-            "upc" => $album["upc"],
-            "uni_imgurl" => str_replace ("_100.jpg", "_300.jpg", $album["imagePath"]),
-            "uni_id" => $performance["id"],
-            "compilation" => ($performance["performance_compilation"]) ? 1 : 0
-          );
-
-          //print_r ($insert);
-          mysqlinsert ($mysql, "recording", $insert);
-          $rid = mysqli_insert_id ($mysql);
-
-          $return[$ii] = Array
-            (
-              "id" => $rid,
-              "label" => $album["label"],
-              "year" => explode ("-", $album["releaseDate"])[0],
-              "upc" => $album["upc"],
-              "cover" => PUBLIC_URL. "/cover/". $rid. "|". str_replace ("/", "-", str_replace ("/images/coverart/", "", $insert["uni_imgurl"])),
-              "uni_id" => $performance["id"],
-              "historical" => (in_array ($album["label"], $historical_labels)) ? "true" : "false",
-              "compilation" => ($performance["performance_compilation"]) ? "true" : "false"
-            );
-
-          foreach ($performance["performers"] as $performer)
-          {
-            $pfinsert = Array
-            (
-              "recording_id" => $rid,
-              "performer" => $performer["name"],
-              "role" => $performer["info"]
-            );
-
-            //print_r ($insert);
-            mysqlinsert ($mysql, "recording_performer", $pfinsert);
-            $return[$ii]["performers"][] = Array ("name" => $pfinsert["performer"], "role" => $pfinsert["role"]);
-          }
-
-          if (in_array ($album["label"], $forbidden_labels))
-          {
-            unset ($return[$ii]);
-          }
-        }
-      }
-    }
-
-    return $return;
-  }
-
-  // receives uni track info and insert into cm's db
-
-  function save_tracks ($mysql, $album, $tracks, $p)
-  {
-    $return = Array ();
-
-    foreach ($tracks as $track)
-    {
-      foreach ($album as $pos => $tr)
-      {
-        if ($tr["track_id"] == $track)
-        {
-          $trinsert = Array
-          (
-            "recording_id" => $p["recording_id"],
-            "cd" => 1,
-            "position" => $pos,
-            "length" => timetosec ($tr["track_length"]),
-            "title" => $tr["track_title"],
-            "uni_id" => $tr["track_id"]
-          );
-
-          //print_r ($trinsert);
-          mysqlinsert ($mysql, "track", $trinsert);
-
-          $return[] = Array
-          (
-            "id" => mysqli_insert_id ($mysql),
-            "title" => $tr["track_title"],
-            "position" => $pos,
-            "length" => timetosec ($tr["track_length"])
-          );
-        }
-      }
-    }
-
-    return $return;
-  }
-
-  // fetches spotify database
-
-  function save_spotify ($mysql, $recording)
-  {
-    global $timesteps, $starttime, $timetimings;
-
-    //  auth
-
-    $token = spotifyauth ();
-
-    // spotify album id
-
-    $spotifyalbums = spotifydownparse (SPOTIFYAPI. '/search?q=upc:' . $recording["upc"]. '%20OR%20upc:0'. $recording["upc"]. '%20OR%20upc:00'. $recording["upc"]. '&type=album', $token);
-    $timesteps[] = "spotify search";
-    $timetimings[] = (microtime (true) - $starttime);
-
-    if ($spotifyalbums["albums"]["total"])
-    {
-      $return["spotify_albumid"] = $spotifyalbums["albums"]["items"][0]["id"];
-
-      mysqlupdate ($mysql, "recording", Array ("spotify_albumid"=>$spotifyalbums["albums"]["items"][0]["id"]), Array ("id"=>$recording["id"]));
-
-      //mysqlupdate ($mysql, "update recording set spotify_albumid = '{$spotifyalbums["albums"]["items"][0]["id"]}' where id = '{$recording["id"]}'");
-
-      if ($return["spotify_albumid"])
-      {
-        // spotify tracks
-
-        $spotifytracks = spotifydownparse (SPOTIFYAPI. '/albums/'. $return["spotify_albumid"]. '/tracks?limit=50', $token);
-        $timesteps[] = "spotify album fetch";
-        $timetimings[] = (microtime (true) - $starttime);
-
-        while ($spotifytracks["next"])
-        {
-          $spotifynewtracks = spotifydownparse ($spotifytracks["next"], $token);
-          $spotifytracks["items"] = array_merge ($spotifytracks["items"], $spotifynewtracks["items"]);
-          $spotifytracks["next"] = $spotifynewtracks["next"];
-        }
-
-        foreach ($recording["tracks"] as $trid => $track)
-        {
-          $return["tracks"][$trid]["spotify_trackid"] = $spotifytracks["items"][$track["position"]]["id"];
-          $return["tracks"][$trid]["length"] = round ($spotifytracks["items"][$track["position"]]["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP);
-
-          mysqlupdate ($mysql, "track", Array ("spotify_trackid"=>$spotifytracks["items"][$track["position"]]["id"], "length"=>$return["tracks"][$trid]["length"]), Array ("id"=>$recording["tracks"][$trid]["id"]));
-          //mysqlupdate ($mysql, "update track set spotify_trackid = '{$spotifytracks["items"][$track["position"]]["id"]}', length = '{$return["tracks"][$trid]["length"]}' where id = '{$recording["tracks"][$trid]["id"]}'");
-        }
-      }
-    }
-    else
-    {
-      mysqlupdate ($mysql, "recording", Array ("spotify_absent"=>"true"), Array ("id"=>$recording["id"]));
-      //mysqlupdate ($mysql, "update recording set spotify_absent = true where id = '{$recording["id"]}'");
-      $return = false;
-    }
-
-    return $return;
-  }
-
   // api return mode
 
   function apireturn ($apireturn)
@@ -506,7 +261,7 @@
         mkdir ($dirname, 0777, true);
       }
 
-      if (!ALWAYS_EXT)
+      if (!NOCACHE)
       {
         $fp = fopen ($filename, "w");
         fwrite ($fp, str_replace (SOFTWARENAME. "-dyn", SOFTWARENAME. "-cache", $content));
@@ -681,6 +436,8 @@
 
     return $return;
   }
+
+  // guess the role of a performer using a given reference db
   
   function guessrole ($name, $rldb)
   {
@@ -720,9 +477,20 @@
     return "Artist";
   }
 
-  function fetchspotify ($work, $return)
+  // fetch and analyze spotify metadata
+
+  function fetchspotify ($work, $return, $offset = 0)
   {
     global $mysql;
+
+    // creating performer roles reference
+
+    $query = "select performer, role from performersdigest where qty > 5 order by qty asc";
+    $rolesdb = mysqlfetch ($mysql, $query);
+    foreach ($rolesdb as $rl)
+    {
+      $rldb[slug (preg_replace ('/^((sir|lord|dame) )/i', '', $rl["performer"]))] = $rl["role"];
+    }
 
     // creating works titles reference
 
@@ -731,14 +499,14 @@
 
     foreach ($worksdb as $wk)
     {
-      similar_text (strtolower ($work[0]["title"])  , $wk["title"], $similarity);
+      similar_text (strtolower ($work[0]["searchtitle"]), $wk["title"], $similarity);
       
       if ($wk["searchtitle"] == strtolower ($wk["title"]))
       {
         $wk["searchtitle"] = worksimplifier ($wk["title"]);
       }
 
-      if ($similarity > MIN_SIMILAR)
+      if ($similarity > MIN_SIMILAR || true)
       {
         $wkdb[] = array_merge ($wk, Array ("similarity" => $similarity));
       }
@@ -763,10 +531,10 @@
 
     if ($return == "albums")
     {    
-      $spalbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&q=". urlencode ($work[0]["searchtitle"]. " artist:{$work[0]["complete_name"]}"), $token);
-      $loop = 0;
+      $spalbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=track:". trim(urlencode ($work[0]["searchtitle"]. " artist:{$work[0]["complete_name"]}")), $token);
+      $loop = 1;
 
-      while ($spalbums["tracks"]["next"] && $loop < SAPI_PAGES)
+      while ($spalbums["tracks"]["next"] && $loop <= SAPI_PAGES)
       {
         $morealbums = spotifydownparse ($spalbums["tracks"]["next"], $token);
         $spalbums["tracks"]["items"] = array_merge ($spalbums["tracks"]["items"], $morealbums["tracks"]["items"]);
@@ -777,7 +545,26 @@
     else if ($return == "tracks")
     {
       $fspalbums = spotifydownparse (SPOTIFYAPI. "/albums/". $work[0]["spotify_albumid"]. "/?limit=". SAPI_ITEMS, $token);
-      $extras = Array ("upc"=>$fspalbums["external_ids"]["upc"], "label"=>$fspalbums["label"]);
+      
+      if ($fspalbums["release_date_precision"] == "day") 
+      {
+        $year = $fspalbums["release_date"];
+      }
+      else if ($fspalbums["release_date_precision"] == "month") 
+      {
+        $year = $fspalbums["release_date"]. "-01";
+      }
+      else
+      {
+        $year = $fspalbums["release_date"]. "-01-01";
+      }
+      
+      $extras = Array 
+        (
+          "label"=>$fspalbums["label"],
+          "cover"=>$fspalbums["images"][0]["url"],
+          "year" => $year
+        );
 
       if (!sizeof ($fspalbums["tracks"]["items"]))
       {
@@ -877,7 +664,6 @@
               $year = $alb["album"]["release_date"]. "-01-01";
             }
 
-            //$spotres[$alb["album"]["id"]] = Array 
             $albums[$alb["album"]["id"]][] = Array 
             (
               "similarity_between" => Array ($work[0]["searchtitle"], worksimplifier (explode (":", $alb["name"])[0])),
@@ -889,7 +675,7 @@
               "year" => $year,
               "spotify_imgurl" => $alb["album"]["images"][0]["url"],
               "spotify_albumid" => $alb["album"]["id"],
-              "performers" => $performers,
+              "performers" => allperformers ($performers, $rldb),
               "tracks" => sizeof ($albums[$alb["album"]["id"]])+1
             );
 
@@ -900,7 +686,8 @@
               "cd" => $alb["disc_number"],
               "position" => $alb["track_number"],
               "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
-              "spotify_trackid" => $alb["id"]
+              "spotify_trackid" => $alb["id"],
+              "performers" => allperformers ($performers, $rldb)
             );
           }
 
@@ -916,109 +703,140 @@
         "usefulness_rate" => round(100*(count (${$return})/count ($spalbums["tracks"]["items"])), 2). "%"
       );
 
+    if ($return == "albums" && $spalbums["tracks"]["next"])
+    {
+      $extras = Array ("next"=>$spalbums["tracks"]["next"]);  
+    }
+
     return Array ("type"=> $return, "items"=>${$return}, "stats"=>$stats, "extras"=>$extras);
   }
 
-  function fetchrecordings ($work)
+  // add concertmaster own extradata to spotify metadata
+
+  function extradata ($spot, $params)
   {
     global $mysql;
 
-    // creating performer roles reference
-
-    $query = "select performer, role from performersdigest where qty > 5 order by qty asc";
-    $rolesdb = mysqlfetch ($mysql, $query);
-    foreach ($rolesdb as $rl)
+    if ($params["aid"])
     {
-      $rldb[slug (preg_replace ('/^((sir|lord|dame) )/i', '', $rl["performer"]))] = $rl["role"];
+      $where = "work_id={$params["wid"]} and spotify_albumid='{$params["aid"]}' and subset={$params["set"]}";
+    }
+    else
+    {
+      $where = "work_id={$params["wid"]}";
     }
 
-    // searching spotify
+    $extrarecordings = mysqlfetch ($mysql, "select spotify_albumid, subset, year, recommended, compilation, oldaudio, verified, wrongdata, spam, badquality from recording where ". $where);
+    $extraperformers = mysqlfetch ($mysql, "select spotify_albumid, subset, performer, role from recording_performer where " . $where . " order by spotify_albumid asc, subset asc");
 
-    $wid = $work[0]["id"];
-    $ii = -1;
+    if ($params["aid"]) $extratracks = mysqlfetch ($mysql, "select cd, position, length, title, spotify_trackid from track where " . $where . " order by spotify_albumid asc, subset asc, cd asc, position asc");
 
-    $spot = fetchspotify ($work, "albums");
-    $spotres = $spot["items"];
-    $return["stats"] = $spot["stats"];
-
-    foreach ($spotres as $kalb => $salb)
+    if ($extratracks)
     {
-      $ii = $ii + 1;
-      $alb = end($salb);
+      $extratracks[sizeof ($extratracks)-1]["performers"] = end($spot["items"])["performers"];
+      $spot["items"] = $extratracks;
+    }
 
-      // inserting
-
-      $insert = Array
-        (
-          "work_id" => $wid,
-          "year" => $alb["year"],
-          "spotify_imgurl" => $alb["spotify_imgurl"],
-          "spotify_albumid" => $alb["spotify_albumid"],
-          "singletrack" => ($alb["tracks"] > 1) ? 0 : 1
-        );
-
-      if (!ALWAYS_EXT)
+    foreach ($extrarecordings as $ed)
+    {
+      if ($params["aid"])
       {
-        mysqlinsert ($mysql, "recording", $insert);
-        $rid = mysqli_insert_id ($mysql);
+        $spot["extras"]["year"] = $ed["year"];
       }
       else
       {
-        $rid = 0;
-      }
+        if ($ed["subset"] > 1)
+        {
+          $spot["items"]["{$ed["spotify_albumid"]}-{$ed["subset"]}"][0] = $ed;
+          $spot["items"]["{$ed["spotify_albumid"]}-{$ed["subset"]}"][0]["tracks"] = 2;
+          $spot["items"]["{$ed["spotify_albumid"]}-{$ed["subset"]}"][0]["spotify_imgurl"] = end($spot["items"]["{$ed["spotify_albumid"]}"])["spotify_imgurl"];
+        }
+        else 
+        {
+          $pos = sizeof ($spot["items"][$ed["spotify_albumid"]]) - 1;
 
-      $return[$ii] = Array
+          if ($pos >= 0)
+          {
+            if ($ed["year"]) $spot["items"][$ed["spotify_albumid"]][$pos]["year"] = $ed["year"];
+            if ($ed["compilation"]) $spot["items"][$ed["spotify_albumid"]][$pos]["compilation"] = true;
+            if ($ed["oldaudio"]) $spot["items"][$ed["spotify_albumid"]][$pos]["historic"] = true;
+            if ($ed["verified"]) $spot["items"][$ed["spotify_albumid"]][$pos]["verified"] = true;
+            if ($ed["recommended"]) $spot["items"][$ed["spotify_albumid"]][$pos]["recommended"] = true;
+
+            if ($ed["badquality"] || $ed["wrongdata"] || $ed["spam"]) 
+            {
+              unset ($spot["items"][$ed["spotify_albumid"]]);
+            }
+          }
+        }
+      }
+    }
+
+    foreach ($extraperformers as $ep)
+    {
+      $array = Array ("name"=>$ep["performer"],"role"=>$ep["role"]);
+
+      if ($params["aid"])
+      {
+        $spot["items"][sizeof($spot["items"])-1]["extraperformers"][] = $array;
+      }
+      else
+      {
+        if ($ep["subset"] > 1)
+        {
+          $spot["items"]["{$ep["spotify_albumid"]}-{$ep["subset"]}"][0]["performers"][] = $array;
+        }
+        else
+        {
+          $pos = sizeof ($spot["items"][$ep["spotify_albumid"]]) - 1;
+          
+          if ($pos >= 0) $spot["items"][$ep["spotify_albumid"]][$pos]["extraperformers"][] = $array;
+        }
+      }
+    }
+
+    return $spot;
+  }
+
+  // return an array of performers along with their guessed roles
+
+  function allperformers ($array, $rldb)
+  {
+    foreach ($array as $art)
+    {
+      $pf[] = Array
         (
-          "id" => $rid,
-          "year" => explode ("-", $alb["year"])[0],
-          "cover" => $alb["spotify_imgurl"],
-          "spotify_albumid" => $alb["spotify_albumid"],
-          "compilation" => ($alb["tracks"] > 1) ? "false" : "true"
+          "performer" => $art,
+          "role" => guessrole ($art, $rldb)
         );
 
-      unset ($pfinsert);
-
-      foreach ($alb["performers"] as $kart => $art)
-      {
-        $pfinsert[] = Array
-          (
-            "recording_id" => $rid,
-            "performer" => $art,
-            "role" => guessrole ($art, $rldb)         
-          );
-
-        //print_r ($pfinsert);
-
-        $return[$ii]["performers"][] = Array ("name" => end($pfinsert)["performer"], "role" => end($pfinsert)["role"]);
-      }
-
-      if (!ALWAYS_EXT)
-      {
-        mysqlmultinsert ($mysql, "recording_performer", $pfinsert);
-      }
+      $return[] = Array ("name" => end($pf)["performer"], "role" => end($pf)["role"]);
     }
 
     return $return;
   }
 
+  // absolves single track recordings if most recordings of a work is single track
+
   function compilationdigest ($apireturn)
   {
     $total = sizeof ($apireturn["recordings"]);
-    $compilations = array_count_values (array_column ($apireturn["recordings"], "compilation"))["true"];
+    $compilations = array_count_values (array_column ($apireturn["recordings"], "singletrack"))["true"];
     $ratio = $compilations / $total;
 
     $apireturn["status"]["rows"] = $total;
+    $apireturn["status"]["stats"]["singletrack"] = $compilations;
+    $apireturn["status"]["stats"]["singletrack_ratio"] = round(100*$ratio,2). "%";
 
-    if ($ratio >= MIN_COMPIL_RATIO)
+    foreach ($apireturn["recordings"] as $key => $rec)
     {
-      foreach ($apireturn["recordings"] as $key => $rec)
-      {
-        $apireturn["recordings"][$key]["compilation"] = "false";
-      }
+      if ($rec["singletrack"] == "true" && $ratio < MIN_COMPIL_RATIO) $apireturn["recordings"][$key]["compilation"] = "true";
     }
 
     return $apireturn;
   }
+
+  // create a searchable and comparable string for a given work title
 
   function worksimplifier ($name)
   {

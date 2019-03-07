@@ -35,7 +35,7 @@
 
     // debug
 
-    define ("ALWAYS_EXT", false); // true will stop saving fetched recordings to the database - useful for debugging
+    define ("NOCACHE", false); // true will stop caching api results - useful for debugging
 
     // library initialization
 

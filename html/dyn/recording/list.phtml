@@ -2,8 +2,6 @@
   include_once ("../../../lib/inc.php");
   global $forbidden_labels, $historical_labels;
 
-  $goext = ALWAYS_EXT;
-
   // try to find the work in the database
 
   $work = mysqlfetch ($mysql, "select epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, ifnull (lower(searchtitle),lower(title)) searchtitle, lower(alternatetitles) alternatetitles, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
@@ -16,14 +14,13 @@
   }
   else
   {
-    // work exists, try to find recordings in the database
+    // work exists
 
     if ($work[0]["searchtitle"] == strtolower ($work[0]["title"]))
     {
       $work[0]["searchtitle"] = worksimplifier ($work[0]["title"]);
     }
 
-    $apireturn["status"] = Array ("success"=>"true");
     $apireturn["work"] = Array
       (
         "composer"=>Array
@@ -38,64 +35,64 @@
          "genre"=>$work[0]["genre"]
       );
 
-    $recordings = mysqlfetch ($mysql, "select performer, role, recording.id, singletrack as compilation, label, date_format (recording.year, '%Y') as year, upc, spotify_imgurl from recording, recording_performer where work_id = {$_REQUEST["id"]} and recording_id = id order by recording.id asc");
+    $apireturn["status"]["source"] = "ext";
 
-    if (!$recordings)
+    // searching spotify
+
+    $wid = $work[0]["id"];
+    $ii = -1;
+
+    $spot = fetchspotify ($work, "albums", $_REQUEST["offset"]);
+
+    // adding extradata to spotify results
+
+    $spot = extradata ($spot, Array ("wid"=>$_REQUEST["id"]));
+
+    // preparing data 
+
+    $spotres = $spot["items"];
+    $apireturn["status"]["stats"] = $spot["stats"];
+
+    foreach ($spotres as $kalb => $salb)
     {
-      // no recording found on the database, fetch externally
+      $ii = $ii + 1;
+      $alb = end($salb);
 
-      $apireturn["status"]["source"] = "ext";
-      $goext = true;
-    }
-    else
-    {
-      // it's all on the db
-
-      $apireturn["status"]["source"] = "db";
-      $id = -1;
-      $lastid = 0;
-
-      foreach ($recordings as $rec)
-      {
-        if (!in_array ($rec["label"], $forbidden_labels))
-        {
-          if ($lastid != $rec["id"])
-          {
-            $id = $id + 1;
-            $apireturn["recordings"][$id] = Array
-              (
-                "id" => $rec["id"],
-                "label" => $rec["label"],
-                "year" => $rec["year"],
-                "upc" => $rec["upc"],
-                "cover" => $rec["spotify_imgurl"],
-                "historical" => (in_array ($rec["label"], $historical_labels)) ? "true" : "false",
-                "compilation" => ($rec["compilation"]) ? "true" : "false"
-              );
-          }
-
-          $apireturn["recordings"][$id]["performers"][] = Array ("name"=>$rec["performer"],"role"=>$rec["role"]);
-
-          $lastid = $rec["id"];
-        }
-      }
+      $return[$ii] = Array
+        (
+          "year" => explode ("-", $alb["year"])[0],
+          "cover" => $alb["spotify_imgurl"],
+          "spotify_albumid" => $alb["spotify_albumid"],
+          "singletrack" => ($alb["tracks"] > 1) ? "false" : "true",
+          "compilation" => $alb["compilation"],
+          "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : $alb["performers"],
+          "set"=>($alb["subset"]) ? $alb["subset"] : 1,
+          "historic"=>$alb["historic"],
+          "verified"=>$alb["verified"],
+          "recommended"=>$alb["recommended"]
+        );
     }
 
-    // not found, fetch externally
-
-    if ($goext)
+    $apireturn["recordings"] = $return;
+    
+    if ($spot["extras"]["next"]) 
     {
-      $apireturn["recordings"] = fetchrecordings ($work);
-      $apireturn["status"]["stats"] = $apireturn["recordings"]["stats"];
-      unset ($apireturn["recordings"]["stats"]);
+      parse_str (parse_url ($spot["extras"]["next"])["query"], $next);
+      $apireturn["next"] = $next["offset"];
     }
 
     // compilation detection
 
     if (isset ($apireturn["recordings"]))
     {
+      $apireturn["status"] = Array ("success"=>"true");
       $apireturn = compilationdigest ($apireturn);
+    }
+    else
+    {
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"No recordings found");
+      unset ($apireturn["recordings"]);
     }
   }
 
-  echo savecache ("/recording/list/work/{$_REQUEST["id"]}.json", apireturn ($apireturn));
+  echo savecache ("/recording/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));

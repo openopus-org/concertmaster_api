@@ -2,7 +2,7 @@
   include_once ("../../../lib/inc.php");
   global $forbidden_labels, $historical_labels;
 
-  $goext = ALWAYS_EXT;
+  $goext = NOCACHE;
 
   if (!postcheck ($_REQUEST, ["work"]))
   {
