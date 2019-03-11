@@ -3,7 +3,7 @@
 
   // try to find the recording
 
-  $recordings = mysqlfetch ($mysql, "select spotify_absent, recording.uni_id as uni_id, spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, recording.id, label, date_format (recording.year, '%Y') as year, upc, uni_imgurl as cover, performer, role from recording, recording_performer, composer, work, playlist_recording where composer.id = composer_id and work.id = work_id and recording.id = playlist_recording.recording_id and recording_performer.recording_id = recording.id and playlist_id = '{$_REQUEST["id"]}' order by position desc, composer.name asc, work.title asc, recording.id asc");
+  $recordings = mysqlfetch ($mysql, "select concat(work.id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.subset, recording.spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, spotify_imgurl as cover, performer, role from recording, recording_performer, composer, work, playlist_recording where composer.id = composer_id and work.id = recording.work_id and playlist_id = '{$_REQUEST["id"]}' and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and playlist_recording.work_id = recording.work_id and playlist_recording.subset = recording.subset and playlist_recording.spotify_albumid = recording.spotify_albumid order by position desc, composer.name asc, work.title asc, recording.spotify_albumid asc, recording.subset asc");
 
   if (!$recordings)
   {
@@ -37,13 +37,9 @@
         $id = $id + 1;
         $apireturn["recordings"][$id] = Array
           (
-            "id" => $rec["id"],
-            "label" => $rec["label"],
-            "year" => $rec["year"],
-            "upc" => $rec["upc"],
-            "cover" => PUBLIC_URL. "/cover/". $rec["id"]. "|". str_replace ("/", "-", str_replace ("/images/coverart/", "", $rec["cover"])),
-            "historical" => (in_array ($rec["label"], $historical_labels)) ? "true" : "false",
-            "compilation" => ($rec["compilation"]) ? "true" : "false"
+            "spotify_albumid" => $rec["spotify_albumid"],
+            "set" => $rec["subset"],
+            "cover" => $rec["cover"]
           );
       }
 

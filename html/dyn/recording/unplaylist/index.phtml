@@ -8,7 +8,7 @@
     $apireturn["status"]["success"] = "false";
     $apireturn["status"]["error"] = "Authentication failed";
   }
-  else if (!postcheck ($_REQUEST, ["rid", "pid"]))
+  else if (!postcheck ($_REQUEST, ["wid", "aid", "set", "pid"]))
   {
     $apireturn["status"]["success"] = "false";
     $apireturn["status"]["error"] = "Missing fields";
@@ -24,7 +24,7 @@
       {
         // removing the recording from the playlist
 
-        $query = "delete from playlist_recording where playlist_id = '{$_REQUEST["pid"]}' and recording_id = '{$_REQUEST["rid"]}'";
+        $query = "delete from playlist_recording where playlist_id = '{$_REQUEST["pid"]}' and spotify_albumid = '{$_REQUEST["aid"]}' and work_id = '{$_REQUEST["wid"]}' and subset = '{$_REQUEST["set"]}'";
 
         mysqli_query ($mysql, $query);
 
@@ -37,7 +37,7 @@
       
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["playlist"]["id"] = $_REQUEST["pid"];
-      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+      $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>$_REQUEST["set"]);
       $apireturn["list"] = playlists ($_REQUEST["id"]);
   }
 

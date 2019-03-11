@@ -8,24 +8,28 @@
     $apireturn["status"]["success"] = "false";
     $apireturn["status"]["error"] = "Authentication failed";
   }
-  else if (!postcheck ($_REQUEST, ["rid"]))
+  else if (!postcheck ($_REQUEST, ["wid", "aid", "set", "cover", "performers"]))
   {
     $apireturn["status"]["success"] = "false";
     $apireturn["status"]["error"] = "Missing fields";
   }
   else
   {
-      // everything ok
+    // insert the recording into the abstract db
 
-      $time = time ();
-      $query = "insert into user_recording (user_id, recording_id, plays, lastplay) values ('{$_REQUEST["id"]}', '{$_REQUEST["rid"]}', 1, '$time')
-                  on duplicate key update plays = plays+1, lastplay = '$time'";
+    insertrecording ($_REQUEST);
 
-      mysqli_query ($mysql, $query);
+    // everything ok
 
-      $apireturn["status"]["success"] = "true";
-      $apireturn["user"]["id"] = $_REQUEST["id"];
-      $apireturn["recording"]["id"] = $_REQUEST["rid"];
+    $time = time ();
+    $query = "insert into user_recording (user_id, work_id, spotify_albumid, subset, plays, lastplay) values ('{$_REQUEST["id"]}', '{$_REQUEST["wid"]}', '{$_REQUEST["aid"]}', '{$_REQUEST["set"]}', 1, '$time')
+                on duplicate key update plays = plays+1, lastplay = '$time'";
+
+    mysqli_query ($mysql, $query);
+
+    $apireturn["status"]["success"] = "true";
+    $apireturn["user"]["id"] = $_REQUEST["id"];
+    $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>$_REQUEST["set"]);
   }
 
   shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");

@@ -847,3 +847,29 @@
     $pattern = '/ in .\b( (minor|major|sharp major|sharp minor|flat major|flat minor|flat|sharp))?/i';
     return preg_replace ($pattern, '', $stepone);
   }
+
+  // inserting a recording into the recording abstract database
+
+  function insertrecording ($request)
+  {
+    global $mysql;
+
+    $query = "insert into recording (work_id, spotify_albumid, subset, spotify_imgurl) values ('{$request["wid"]}', '{$request["aid"]}', '{$request["set"]}', '{$request["cover"]}')";
+    mysqli_query ($mysql, $query);
+
+    // inserting performers into the recording abstract database
+
+    if (mysqli_affected_rows ($mysql) > 0)
+    {
+      $performers = json_decode ($request["performers"], true);
+
+      foreach ($performers as $pk => $pf)
+      {
+        $nperfs[] = Array ("performer"=>$pf["name"], "role"=>$pf["role"], "work_id"=>$request["wid"], "spotify_albumid"=>$request["aid"], "subset"=>$request["set"]);
+      }
+
+      mysqlmultinsert ($mysql, "recording_performer", $nperfs);
+    }
+
+    return true;
+  }
