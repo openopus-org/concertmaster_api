@@ -623,7 +623,7 @@
         foreach ($wkdb as $wk)
         {
           //similar_text ($wk["title"], explode (":", $alb["name"])[0], $sim);
-          similar_text ($wk["searchtitle"], worksimplifier (explode (":", $alb["name"])[0]), $sim);
+          similar_text (str_replace (" ", "", $wk["searchtitle"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0])), $sim);
           
           //if ($sim > MIN_SIMILAR) echo $wk["id"]. " - ". $sim. " - ". $wk["searchtitle"]. " - ". worksimplifier (explode (":", $alb["name"])[0]). "\n[". $alb["name"]. "]\n\n";
           
