@@ -545,7 +545,7 @@
     else if ($return == "tracks")
     {
       $fspalbums = spotifydownparse (SPOTIFYAPI. "/albums/". $work[0]["spotify_albumid"]. "/?limit=". SAPI_ITEMS, $token);
-      
+
       if ($fspalbums["release_date_precision"] == "day") 
       {
         $year = $fspalbums["release_date"];
@@ -561,9 +561,10 @@
       
       $extras = Array 
         (
-          "label"=>$fspalbums["label"],
-          "cover"=>$fspalbums["images"][0]["url"],
-          "year" => $year
+          "label" => $fspalbums["label"],
+          "cover" => $fspalbums["images"][0]["url"],
+          "year" => $year,
+          "markets" => $fspalbums["available_markets"]
         );
 
       if (!sizeof ($fspalbums["tracks"]["items"]))
