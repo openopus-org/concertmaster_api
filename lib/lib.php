@@ -494,12 +494,17 @@
     {
       preg_match_all (CATALOGUE_REGEX, $work[0]["title"], $matches);
 
-      //print_r ($matches);
-
       if (sizeof ($matches[0]))
       {
         $mode = "catalogue";
         $search = end($matches[1]). " ". end($matches[3]);
+
+        if (strtolower (end($matches[1])) == "op" || strtolower (end($matches[1])) == "opus")
+        {
+         preg_match_all ('/(no\.)( )*([0-9])+/i', $work[0]["title"], $opmatches);
+         
+         $search .= " no. ". end($opmatches[3]);
+        }
       }
       else
       {
@@ -655,7 +660,23 @@
 
         if (sizeof ($trmatches[0])) 
         {
-          $similarity = 100;
+          if (trim(end($matches[1])) == "op" || trim(end($matches[1])) == "opus")
+          {
+            preg_match_all ('/(no\.)( )*'. trim(end($opmatches[3])). '($| |\W)/i', $alb["name"], $tropmatches);
+
+            if (sizeof ($tropmatches[0])) 
+            {
+              $similarity = 100;
+            }
+            else
+            {
+              $similarity = 0;
+            }
+          }
+          else
+          {
+            $similarity = 100;
+          }
         }
         else
         {
