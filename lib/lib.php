@@ -489,6 +489,7 @@
     {
       $mode = "title";
       $search = $work[0]["searchtitle"];
+      $number = false;
     }
     else
     {
@@ -501,15 +502,24 @@
 
         if (strtolower (end($matches[1])) == "op" || strtolower (end($matches[1])) == "opus")
         {
-         preg_match_all ('/(no\.)( )*([0-9])+/i', $work[0]["title"], $opmatches);
-         
-         $search .= " no. ". end($opmatches[3]);
+          preg_match_all ('/(no\.)( )*([0-9])+/i', $work[0]["title"], $opmatches);
+          
+          if (sizeof ($opmatches[0])) 
+          {
+            $search .= " no. ". end($opmatches[3]);
+            $number = true;
+          }
+          else
+          {
+            $number = false;
+          }
         }
       }
       else
       {
         $mode = "title";
         $search = $work[0]["searchtitle"];
+        $number = false;
       }
     }
 
@@ -660,7 +670,7 @@
 
         if (sizeof ($trmatches[0])) 
         {
-          if (trim(end($matches[1])) == "op" || trim(end($matches[1])) == "opus")
+          if ($number)
           {
             preg_match_all ('/(no\.)( )*'. trim(end($opmatches[3])). '($| |\W)/i', $alb["name"], $tropmatches);
 
