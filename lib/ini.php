@@ -23,7 +23,7 @@
   define ("SAPI_PAGES", 5);
   define ("API_RETURN", "json");
   define ("HASH_SALT", "vUJmLwFgniCBmqcreBbsX9Jb");
-  define ("CATALOGUE_REGEX", "/(bwv|hwv|op|opus|d|k|kv|hess|woo|fs)( |\.)*([0-9]+)([a-z])?/i");
+  define ("CATALOGUE_REGEX", "/(bwv|hwv|op|opus|d|k|kv|hess|woo|fs|k\.anh|wq|w|sz|kk|m|s|h|trv|rv)( |\.)*([0-9]+)([a-z])?/i");
 
   // spotify constants
 

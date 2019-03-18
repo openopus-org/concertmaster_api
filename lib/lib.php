@@ -523,6 +523,10 @@
       }
     }
 
+    //echo $mode. " - ";
+    //echo $search. " - ";
+    //echo $number. "\n\n";
+
     // creating performer roles reference
 
     $query = "select performer, role from performersdigest where qty > 5 order by qty asc";
@@ -575,16 +579,19 @@
     if ($return == "albums")
     {    
       $spalbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=track:". trim(urlencode ($search. " artist:{$work[0]["complete_name"]}")), $token);
-      
       $loop = 1;
+      $spalbums["tracks"]["next"] = $offset + SAPI_ITEMS;
 
-      while ($spalbums["tracks"]["next"] && $loop <= SAPI_PAGES)
+      while ($spalbums["tracks"]["total"] == SAPI_ITEMS && $loop <= SAPI_PAGES)
       {
-        $morealbums = spotifydownparse ($spalbums["tracks"]["next"], $token);
+        $morealbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$spalbums["tracks"]["next"]}&q=track:". trim(urlencode ($search. " artist:{$work[0]["complete_name"]}")), $token);
+        //$morealbums = spotifydownparse ($spalbums["tracks"]["next"], $token);
         $spalbums["tracks"]["items"] = array_merge ($spalbums["tracks"]["items"], $morealbums["tracks"]["items"]);
-        $spalbums["tracks"]["next"] = $morealbums["tracks"]["next"];
+        $spalbums["tracks"]["next"] += SAPI_ITEMS;
         $loop++;
       }
+
+      if ($spalbums["tracks"]["total"] < SAPI_ITEMS) $spalbums["tracks"]["next"] = "";
     }
     else if ($return == "tracks")
     {
