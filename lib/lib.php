@@ -498,9 +498,9 @@
       if (sizeof ($matches[0]))
       {
         $mode = "catalogue";
-        $search = end($matches[1]). " ". end($matches[3]);
+        $search = end($matches[2]). " ". end($matches[7]);
 
-        if (strtolower (end($matches[1])) == "op" || strtolower (end($matches[1])) == "opus")
+        if (strtolower (end($matches[2])) == "op" || strtolower (end($matches[2])) == "opus")
         {
           preg_match_all ('/(no\.)( )*([0-9])+/i', $work[0]["title"], $opmatches);
           
@@ -522,10 +522,6 @@
         $number = false;
       }
     }
-
-    //echo $mode. " - ";
-    //echo $search. " - ";
-    //echo $number. "\n\n";
 
     // creating performer roles reference
 
@@ -580,18 +576,18 @@
     {    
       $spalbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=track:". trim(urlencode ($search. " artist:{$work[0]["complete_name"]}")), $token);
       $loop = 1;
-      $spalbums["tracks"]["next"] = $offset + SAPI_ITEMS;
+      //$spalbums["tracks"]["next"] = $offset + SAPI_ITEMS;
 
-      while ($spalbums["tracks"]["total"] == SAPI_ITEMS && $loop <= SAPI_PAGES)
+      while ($spalbums["tracks"]["next"] && $loop <= SAPI_PAGES)
       {
-        $morealbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$spalbums["tracks"]["next"]}&q=track:". trim(urlencode ($search. " artist:{$work[0]["complete_name"]}")), $token);
-        //$morealbums = spotifydownparse ($spalbums["tracks"]["next"], $token);
+        //$morealbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$spalbums["tracks"]["next"]}&q=track:". trim(urlencode ($search. " artist:{$work[0]["complete_name"]}")), $token);
+        $morealbums = spotifydownparse ($spalbums["tracks"]["next"], $token);
         $spalbums["tracks"]["items"] = array_merge ($spalbums["tracks"]["items"], $morealbums["tracks"]["items"]);
-        $spalbums["tracks"]["next"] += SAPI_ITEMS;
+        $spalbums["tracks"]["next"] = $morealbums["tracks"]["next"];
         $loop++;
       }
 
-      if ($spalbums["tracks"]["total"] < SAPI_ITEMS) $spalbums["tracks"]["next"] = "";
+      //if ($spalbums["tracks"]["total"] < SAPI_ITEMS) $spalbums["tracks"]["next"] = "";
     }
     else if ($return == "tracks")
     {
@@ -671,9 +667,11 @@
       //echo "\n". slug($alb["name"]). " - ". slug($search). "\n";
       //echo strpos (slug ($alb["name"]), slug($search)). "\n";
       
+      //print_r ($matches);
+
       if ($mode == "catalogue")
       {
-        preg_match_all ('/('. str_replace (' ', '( )*', trim(end($matches[1]))). ')(( |\.))*('. str_replace (' ', '( )*', trim(end($matches[3]))). '($| |\W))/i', $alb["name"], $trmatches);
+        preg_match_all ('/('. str_replace (' ', '( )*', str_replace ("/", "\/", trim(end($matches[2])))). ')(( |\.))*('. str_replace (' ', '( )*', trim(end($matches[7]))). '($| |\W))/i', $alb["name"], $trmatches);
 
         if (sizeof ($trmatches[0])) 
         {
@@ -785,6 +783,7 @@
 
     $stats = Array 
       (
+        "term_used" => trim(urlencode ($search. " artist:{$work[0]["complete_name"]}")),
         "spotify_responses" => count ($spalbums["tracks"]["items"]),
         "useful_responses" => count (${$return}),
         "usefulness_rate" => round(100*(count (${$return})/count ($spalbums["tracks"]["items"])), 2). "%"
@@ -915,11 +914,14 @@
     $apireturn["status"]["stats"]["singletrack"] = $compilations;
     $apireturn["status"]["stats"]["singletrack_ratio"] = round(100*$ratio,2). "%";
 
-    foreach ($apireturn["recordings"] as $key => $rec)
+    if ($total >= MIN_COMPIL_UNIVERSE)
     {
-      if ($rec["singletrack"] == "true" && $ratio < MIN_COMPIL_RATIO) $apireturn["recordings"][$key]["compilation"] = "true";
+      foreach ($apireturn["recordings"] as $key => $rec)
+      {
+        if ($rec["singletrack"] == "true" && $ratio < MIN_COMPIL_RATIO) $apireturn["recordings"][$key]["compilation"] = "true";
+      }
     }
-
+  
     return $apireturn;
   }
 
@@ -960,3 +962,23 @@
 
     return true;
   }
+
+  // convert decimal to roman
+
+  function dectoroman ($number) 
+  {
+    $map = array('M' => 1000, 'CM' => 900, 'D' => 500, 'CD' => 400, 'C' => 100, 'XC' => 90, 'L' => 50, 'XL' => 40, 'X' => 10, 'IX' => 9, 'V' => 5, 'IV' => 4, 'I' => 1);
+    $returnValue = '';
+    while ($number > 0) 
+    {
+        foreach ($map as $roman => $int) 
+        {
+            if($number >= $int) {
+                $number -= $int;
+                $returnValue .= $roman;
+                break;
+            }
+        }
+    }
+    return $returnValue;
+}

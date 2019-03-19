@@ -51,7 +51,6 @@
     // preparing data 
 
     $spotres = $spot["items"];
-    $apireturn["status"]["stats"] = $spot["stats"];
 
     foreach ($spotres as $kalb => $salb)
     {
@@ -77,21 +76,21 @@
     
     if ($spot["extras"]["next"]) 
     {
-      //parse_str (parse_url ($spot["extras"]["next"])["query"], $next);
-      //$apireturn["next"] = $next["offset"];
-      $apireturn["next"] = $spot["extras"]["next"];
+      parse_str (parse_url ($spot["extras"]["next"])["query"], $next);
+      $apireturn["next"] = $next["offset"];
+      //$apireturn["next"] = $spot["extras"]["next"];
     }
 
     // compilation detection
 
     if (isset ($apireturn["recordings"]))
     {
-      $apireturn["status"] = Array ("success"=>"true");
+      $apireturn["status"] = Array ("success"=>"true", "stats"=> $spot["stats"]);
       $apireturn = compilationdigest ($apireturn);
     }
     else
     {
-      $apireturn["status"] = Array ("success"=>"false", "error"=>"No recordings found");
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"No recordings found", "stats"=> $spot["stats"]);
       unset ($apireturn["recordings"]);
     }
   }
