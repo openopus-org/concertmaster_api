@@ -19,9 +19,16 @@
 
     insertrecording ($_REQUEST);
 
+    // update creation
+
+    foreach (["verified", "compilation", "wrongdata", "badquality"] as $val)
+    {
+      $set[] = $val. " = ". ($_REQUEST["tag"] == $val ? 1 : 0);
+    }
+
     // updating the recording 
 
-    $query = "update recording set {$_REQUEST["tag"]} = 1 where work_id = '{$_REQUEST["wid"]}' and spotify_albumid = '{$_REQUEST["aid"]}' and subset = '{$_REQUEST["set"]}'";
+    $query = "update recording set ". implode (",", $set). " where work_id = '{$_REQUEST["wid"]}' and spotify_albumid = '{$_REQUEST["aid"]}' and subset = '{$_REQUEST["set"]}'";
     mysqli_query ($mysql, $query);
 
     $apireturn["status"]["success"] = "true";

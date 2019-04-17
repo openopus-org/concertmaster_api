@@ -63,16 +63,22 @@
           "cover" => $alb["spotify_imgurl"],
           "spotify_albumid" => $alb["spotify_albumid"],
           "singletrack" => ($alb["tracks"] > 1) ? "false" : "true",
-          "compilation" => $alb["compilation"],
+          "compilation" => $alb["compilation"] ? "true" : "false",
           "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : $alb["performers"],
-          "set"=>($alb["subset"]) ? $alb["subset"] : 1,
-          "historic"=>$alb["historic"],
-          "verified"=>$alb["verified"],
-          "recommended"=>$alb["recommended"]
+          "set" => ($alb["subset"]) ? $alb["subset"] : 1,
+          "historic" => $alb["historic"] ? "true" : "false",
+          "verified" => $alb["verified"] ? "true" : "false",
+          "recommended" => $alb["recommended"] ? "true" : "false"
         );
+
+        if ($alb["verified"])
+        {
+          $vreturn[$ii] = $return[$ii];
+          unset ($return[$ii]);
+        }
     }
 
-    $apireturn["recordings"] = $return;
+    $apireturn["recordings"] = (sizeof ($vreturn) ? array_merge ($vreturn, $return) : $return);
     
     if ($spot["extras"]["next"]) 
     {
