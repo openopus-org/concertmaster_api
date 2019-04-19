@@ -74,6 +74,7 @@
       $apireturn["recording"]["length"] += end($trinsert)["length"];
     }
 
+    $apireturn["recording"]["verified"] = $spot["extras"]["verified"] ? "true" : "false";
     $apireturn["recording"]["cover"] = $spot["extras"]["cover"];
     $apireturn["recording"]["set"] = $_REQUEST["set"];
     $apireturn["recording"]["year"] = explode ("-", $spot["extras"]["year"])[0];

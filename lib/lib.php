@@ -474,7 +474,7 @@
       return $rldb[slug ($name)];
     }
 
-    return "Artist";
+    return "";
   }
 
   // fetch and analyze spotify metadata
@@ -592,7 +592,7 @@
     else if ($return == "tracks")
     {
       $fspalbums = spotifydownparse (SPOTIFYAPI. "/albums/". $work[0]["spotify_albumid"]. "/?limit=". SAPI_ITEMS, $token);
-    
+
       if ($fspalbums["release_date_precision"] == "day") 
       {
         $year = $fspalbums["release_date"];
@@ -812,7 +812,7 @@
       $where = "work_id={$params["wid"]}";
     }
 
-    $extrarecordings = mysqlfetch ($mysql, "select spotify_albumid, subset, year, recommended, compilation, oldaudio, verified, wrongdata, spam, badquality from recording where ". $where);
+    $extrarecordings = mysqlfetch ($mysql, "select spotify_imgurl, spotify_albumid, subset, year, recommended, compilation, oldaudio, verified, wrongdata, spam, badquality from recording where ". $where);
     $extraperformers = mysqlfetch ($mysql, "select spotify_albumid, subset, performer, role from recording_performer where " . $where . " order by spotify_albumid asc, subset asc");
 
     if ($params["aid"]) $extratracks = mysqlfetch ($mysql, "select cd, position, length, title, spotify_trackid from track where " . $where . " order by spotify_albumid asc, subset asc, cd asc, position asc");
@@ -827,15 +827,15 @@
     {
       if ($params["aid"])
       {
-        $spot["extras"]["year"] = $ed["year"];
+        if ($ed["year"]) $spot["extras"]["year"] = $ed["year"];
+        if ($ed["verified"]) $spot["extras"]["verified"] = "true";
       }
       else
       {
-        if ($ed["subset"] > 1)
+        if ($ed["subset"] > 1 || ($ed["verified"] && !sizeof ($spot["items"][$ed["spotify_albumid"]])))
         {
           $spot["items"]["{$ed["spotify_albumid"]}-{$ed["subset"]}"][0] = $ed;
           $spot["items"]["{$ed["spotify_albumid"]}-{$ed["subset"]}"][0]["tracks"] = 2;
-          $spot["items"]["{$ed["spotify_albumid"]}-{$ed["subset"]}"][0]["spotify_imgurl"] = end($spot["items"]["{$ed["spotify_albumid"]}"])["spotify_imgurl"];
         }
         else 
         {
@@ -868,7 +868,7 @@
       }
       else
       {
-        if ($ep["subset"] > 1)
+        if ($ep["subset"] > 1 || $spot["items"]["{$ep["spotify_albumid"]}-{$ep["subset"]}"][0]["verified"])
         {
           $spot["items"]["{$ep["spotify_albumid"]}-{$ep["subset"]}"][0]["performers"][] = $array;
         }
@@ -897,6 +897,55 @@
         );
 
       $return[] = Array ("name" => end($pf)["performer"], "role" => end($pf)["role"]);
+    }
+
+    // orchestras (almost always) have conductors
+
+    if (sizeof ($return) == 2)
+    {
+      foreach ($return as $i => $r)
+      {
+        if ($r["role"] == "Orchestra")
+        {
+          $return[($i ? 0 : 1)]["role"] = "Conductor";
+        }
+      }
+    }
+
+    // ensembles, choirs, orchestras and conductors should end the array
+
+    foreach ($return as $ii => $rr)
+    {
+      if ($rr["role"] == "Orchestra")
+      {
+        $or[] = $rr;
+        unset ($return[$ii]);
+      }
+      elseif ($rr["role"] == "Ensemble" || $rr["role"] == "Choir")
+      {
+        $er[] = $rr;
+        unset ($return[$ii]);
+      }
+      elseif ($rr["role"] == "Conductor")
+      {
+        $cr[] = $rr;
+        unset ($return[$ii]);
+      }
+    }
+
+    if (sizeof ($er))
+    {
+      $return = array_merge ($return, $er);
+    }
+
+    if (sizeof ($or))
+    {
+      $return = array_merge ($return, $or);
+    }
+
+    if (sizeof ($cr))
+    {
+      $return = array_merge ($return, $cr);
     }
 
     return $return;
