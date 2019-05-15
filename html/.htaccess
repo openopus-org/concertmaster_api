@@ -16,6 +16,12 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/detail/work/(.*)/album/(.*)/(.*).json dyn/recording/detail.phtml?wid=$1&aid=$2&set=$3 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/shorturl/work/(.*)/album/(.*)/(.*).json dyn/recording/shorten.phtml?wid=$1&aid=$2&set=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/unshorten/(.*).json dyn/recording/unshorten.phtml?rid=$1 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/random/work/(.*).json dyn/recording/random.phtml?work=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f

@@ -506,7 +506,7 @@
           
           if (sizeof ($opmatches[0])) 
           {
-            $search .= " no. ". end($opmatches[3]);
+            $search .= " ". end ($opmatches[0]);
             $number = true;
           }
           else
@@ -677,7 +677,7 @@
         {
           if ($number)
           {
-            preg_match_all ('/(no\.)( )*'. trim(end($opmatches[3])). '($| |\W)/i', $alb["name"], $tropmatches);
+            preg_match_all ('/(no\.)( )*'. str_replace("no. ", "", end($opmatches[0])). '($| |\W)/i', $alb["name"], $tropmatches);
 
             if (sizeof ($tropmatches[0])) 
             {
@@ -736,6 +736,14 @@
 
           if (sizeof ($performers))
           {
+            if (sizeof ($performers) == 1)
+            {
+              if (!strpos ($alb["artists"][0]["name"], "/")) 
+              {
+                if (guessrole ($performers[0], $rldb) == "Orchestra") $performers[] = $alb["artists"][0]["name"];
+              }
+            }
+
             if ($alb["album"]["release_date_precision"] == "day") 
             {
               $year = $alb["album"]["release_date"];
@@ -767,7 +775,7 @@
             $tracks[] = Array 
             (
               "full_title" => $alb["name"],
-              "title" => trim (end (explode (":", $alb["name"]))),
+              "title" => trim (str_replace ("(Live)", "", end (explode (":", $alb["name"])))),
               "cd" => $alb["disc_number"],
               "position" => $alb["track_number"],
               "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),

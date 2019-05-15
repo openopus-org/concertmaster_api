@@ -18,13 +18,13 @@
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
   define ("MIN_COMPIL_RATIO", 0.8);
-  define ("MIN_COMPIL_UNIVERSE", 20);
+  define ("MIN_COMPIL_UNIVERSE", 10);
   define ("MIN_RELEVANCE_PERFORMER", 5);
   define ("SAPI_ITEMS", 50);
   define ("SAPI_PAGES", 5);
   define ("API_RETURN", "json");
   define ("HASH_SALT", "vUJmLwFgniCBmqcreBbsX9Jb");
-  define ("CATALOGUE_REGEX", "/\,( )*(bwv|hwv|op|opus|d|k|kv|hess|woo|fs|k\.anh|wq|w|sz|kk|m|s|h|trv|rv|jw ([a-z]+\/)|(hob\.([a-z])+\:))( |\.)*([0-9]+)([a-z])?/i");
+  define ("CATALOGUE_REGEX", "/\,( )*(bwv|hwv|op|opus|d|k|kv|hess|woo|fs|k\.anh|wq|w|sz|kk|m|s|h|trv|rv|jw ([a-z]+\/)|(hob\.([a-z])+\:))( |\.)*(([0-9]+)([a-z])?)/i");
 
   // spotify constants
 

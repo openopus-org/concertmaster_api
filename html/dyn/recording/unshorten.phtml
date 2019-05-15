@@ -1,0 +1,32 @@
+<?
+  include_once ("../../../lib/inc.php");
+
+  // identity check
+
+  if (!postcheck ($_REQUEST, ["rid"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+    // select the shorted url for the recording
+
+    $query = "select work_id, spotify_albumid, subset from shortrec where id = '{$_REQUEST["rid"]}'";
+    $id = mysqlfetch ($mysql, $query);
+
+    // it doesn't exit, so... inserting the recording into the short urls table
+
+    if (!$id)
+    {
+        $apireturn["status"]["success"] = "false";
+        $apireturn["status"]["error"] = "No recording found";
+    }
+    else
+    {
+        $apireturn["status"]["success"] = "true";
+        $apireturn["recording"] = Array ("work_id"=>$id[0]["work_id"], "spotify_albumid"=>$id[0]["spotify_albumid"], "set"=>$id[0]["subset"], "id" => $_REQUEST["rid"]);
+    }
+  }
+
+  echo savecache ("/recording/unshorten/{$_REQUEST["rid"]}.json", apireturn ($apireturn));
