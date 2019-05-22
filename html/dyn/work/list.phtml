@@ -18,7 +18,7 @@
   {
     if (strlen ($_REQUEST["search"]) > 3)
     {
-      $where .= "and match (title) against ('{$_REQUEST["search"]}*' IN BOOLEAN MODE)";
+      $where .= "and match (title, subtitle) against ('{$_REQUEST["search"]}*' IN BOOLEAN MODE)";
     }
     else
     {
@@ -29,7 +29,7 @@
 
   // listing works
 
-  $sql = "select title, work.id as id, genre, composer.epoch, composer.id as composer, composer.name from composer, work where work.composer_id = composer.id and composer.id = '{$_REQUEST["composer"]}' $where order by title asc";
+  $sql = "select title, ifnull(subtitle,'') subtitle, work.id as id, genre, composer.epoch, composer.id as composer, composer.name from composer, work where work.composer_id = composer.id and composer.id = '{$_REQUEST["composer"]}' $where order by title asc";
   $works = mysqlfetch ($mysql, $sql);
 
   if (!$works)

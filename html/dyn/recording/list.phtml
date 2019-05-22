@@ -4,7 +4,7 @@
 
   // try to find the work in the database
 
-  $work = mysqlfetch ($mysql, "select namesearch, epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, ifnull (lower(searchtitle),lower(title)) searchtitle, lower(alternatetitles) alternatetitles, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
+  $work = mysqlfetch ($mysql, "select namesearch, epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, ifnull(subtitle,'') subtitle, ifnull (lower(searchtitle),lower(title)) searchtitle, lower(alternatetitles) alternatetitles, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
  
   if (!$work)
   {
@@ -31,6 +31,7 @@
           ),
          "id"=>$_REQUEST["id"],
          "title"=>$work[0]["title"],
+         "subtitle"=>$work[0]["subtitle"],
          "searchtitle"=>$work[0]["searchtitle"],
          "genre"=>$work[0]["genre"]
       );

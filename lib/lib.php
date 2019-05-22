@@ -775,7 +775,7 @@
             $tracks[] = Array 
             (
               "full_title" => $alb["name"],
-              "title" => trim (str_replace ("(Live)", "", end (explode (":", $alb["name"])))),
+              "title" => trim (str_replace ("(Live)", "", end (explode (":", end (explode ("/", $alb["name"])))))),
               "cd" => $alb["disc_number"],
               "position" => $alb["track_number"],
               "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
@@ -820,7 +820,7 @@
       $where = "work_id={$params["wid"]}";
     }
 
-    $extrarecordings = mysqlfetch ($mysql, "select spotify_imgurl, spotify_albumid, subset, year, recommended, compilation, oldaudio, verified, wrongdata, spam, badquality from recording where ". $where);
+    $extrarecordings = mysqlfetch ($mysql, "select ifnull(observation,'') observation, spotify_imgurl, spotify_albumid, subset, year, recommended, compilation, oldaudio, verified, wrongdata, spam, badquality from recording where ". $where);
     $extraperformers = mysqlfetch ($mysql, "select spotify_albumid, subset, performer, role from recording_performer where " . $where . " order by spotify_albumid asc, subset asc");
 
     if ($params["aid"]) $extratracks = mysqlfetch ($mysql, "select cd, position, length, title, spotify_trackid from track where " . $where . " order by spotify_albumid asc, subset asc, cd asc, position asc");
@@ -836,6 +836,7 @@
       if ($params["aid"])
       {
         if ($ed["year"]) $spot["extras"]["year"] = $ed["year"];
+        if ($ed["observation"]) $spot["extras"]["observation"] = $ed["observation"];
         if ($ed["verified"]) $spot["extras"]["verified"] = "true";
       }
       else
@@ -989,7 +990,7 @@
     $name = strtolower ($name);
     $pattern = '/(\,|\(|\'|\"|\-|\;).*/i';
     $stepone = preg_replace ($pattern, '', $name);
-    
+
     $pattern = '/ in .\b( (minor|major|sharp major|sharp minor|flat major|flat minor|flat|sharp))?/i';
     return preg_replace ($pattern, '', $stepone);
   }
