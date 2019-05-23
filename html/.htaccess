@@ -22,9 +22,6 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/unshorten/(.*).json dyn/recording/unshorten.phtml?rid=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule recording/random/work/(.*).json dyn/recording/random.phtml?work=$1 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/playlist/(.*).json dyn/recording/playlist.phtml?id=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f

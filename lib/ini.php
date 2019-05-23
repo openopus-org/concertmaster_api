@@ -13,7 +13,7 @@
   // global constants
 
   define ("SOFTWARENAME", "Concertmaster");
-  define ("SOFTWAREVERSION", "0.19");
+  define ("SOFTWAREVERSION", "1.19.05");
   define ("USERAGENT", SOFTWARENAME. "/" . SOFTWAREVERSION. " ( ". SOFTWAREMAIL. " )");
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
@@ -30,11 +30,6 @@
 
   define ("SPOTIFYAPI", "https://api.spotify.com/v1");
   define ("SPOTIFYTOKENAPI", "https://accounts.spotify.com/api/token");
-
-  // forbidden and bad labels
-
-  $forbidden_labels = ['Classical Archives','Music@Menlo LIVE','Amadis','Yoyo USA','Classico','CD Accord','Vista Vera','CMS Live','Summit Records'];
-  $historical_labels = ['British Music Society','SOMM Recordings','West Hill Radio Archives','Music and Arts Programs of America','IDIS','Audite','Archiphon','Fono','Pierian Recording Society'];
 
   // performer roles keywords
 
