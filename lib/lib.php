@@ -707,9 +707,9 @@
         foreach ($wkdb as $wk)
         {
           //similar_text ($wk["title"], explode (":", $alb["name"])[0], $sim);
-          similar_text (str_replace (" ", "", $wk["searchtitle"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0])), $sim);
+          similar_text (str_replace (" ", "", $wk["searchtitle"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0], $work[0]["fullname"])), $sim);
           
-          //if ($sim > MIN_SIMILAR) echo $wk["id"]. " - ". $sim. " - ". $wk["searchtitle"]. " - ". worksimplifier (explode (":", $alb["name"])[0]). "\n[". $alb["name"]. "]\n\n";
+          //if ($sim > MIN_SIMILAR) echo $wk["id"]. " - ". $sim. " - ". $wk["searchtitle"]. " - ". worksimplifier (explode (":", $alb["name"])[0], true). "\n[". $alb["name"]. "]\n\n";
           
           if ($sim > $simwkdb) 
           {
@@ -719,7 +719,7 @@
           }
         }
 
-        //echo " GUESSED: ". $mostwkdb. " - ". $mostwkdbtitle. "\n[". $alb["name"]. "]\n\n";
+        //echo "GUESSED: ". $mostwkdb. " - ". $mostwkdbtitle. "\n[". $alb["name"]. "]\n\n";
         
         if ($mostwkdb == $work[0]["id"] || $mode == "catalogue")
         {
@@ -985,14 +985,23 @@
 
   // create a searchable and comparable string for a given work title
 
-  function worksimplifier ($name)
-  {
+  function worksimplifier ($name, $fullname = false)
+  { 
     $name = strtolower ($name);
-    $pattern = '/(\,|\(|\'|\"|\-|\;).*/i';
-    $stepone = preg_replace ($pattern, '', $name);
 
-    $pattern = '/ in .\b( (minor|major|sharp major|sharp minor|flat major|flat minor|flat|sharp))?/i';
-    return preg_replace ($pattern, '', $stepone);
+    if ($fullname) 
+    { 
+      $pattern = '/(\,|\(|\'|\"|\-|\;)/i';
+      $stepone = preg_replace ($pattern, ' ', $name);
+      return $stepone;
+    }
+    else
+    {
+      $pattern = '/(\,|\(|\'|\"|\-|\;).*/i';
+      $stepone = preg_replace ($pattern, '', $name);
+      $pattern = '/ in .\b( (minor|major|sharp major|sharp minor|flat major|flat minor|flat|sharp))?/i';
+      return preg_replace ($pattern, '', $stepone);
+    }
   }
 
   // inserting a recording into the recording abstract database
