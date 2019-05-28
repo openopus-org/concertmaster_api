@@ -64,7 +64,7 @@
     }
 
     $query = "insert into {$table} (". implode (", ", array_keys ($lines[0])). ") values ". implode (", ", $values);
-    echo $query = str_replace ("''", "null", $query);
+    $query = str_replace ("''", "null", $query);
     
     mysqli_query ($mysql, $query);
 
