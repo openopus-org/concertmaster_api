@@ -64,7 +64,7 @@
     }
 
     $query = "insert into {$table} (". implode (", ", array_keys ($lines[0])). ") values ". implode (", ", $values);
-    $query = str_replace ("''", "null", $query);
+    echo $query = str_replace ("''", "null", $query);
     
     mysqli_query ($mysql, $query);
 
@@ -1014,8 +1014,6 @@
     mysqli_query ($mysql, $query);
 
     // inserting performers into the recording abstract database
-
-    echo "ins: ". mysqli_affected_rows ($mysql); 
 
     if (mysqli_affected_rows ($mysql) > 0)
     {
