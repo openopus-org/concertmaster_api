@@ -3,7 +3,7 @@
 
   // try to find the recording
 
-  $recordings = mysqlfetch ($mysql, "select concat(work.id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.subset, recording.spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, spotify_imgurl as cover, performer, role from recording, recording_performer, composer, work, user_recording where composer.id = composer_id and work.id = recording.work_id and user_recording.user_id = '{$_REQUEST["id"]}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid order by lastplay desc, composer.name asc, work.title asc, recording.spotify_albumid asc, recording.subset asc limit 100");
+  $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.subset, recording.spotify_albumid, recording.work_id as work, spotify_imgurl as cover, performer, role from recording, recording_performer, user_recording where user_recording.user_id = '{$_REQUEST["id"]}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid order by lastplay desc, work asc, recording.spotify_albumid asc, recording.subset asc limit 100");
   
   if (!$recordings)
   {
@@ -14,6 +14,15 @@
   else
   {
     // recordings exist, list
+
+    // open opus api call
+
+    foreach ($recordings as $rec)
+    {
+      $worklist[] = $rec["work"];
+    }
+
+    $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
 
     foreach ($recordings as $rec)
     {
@@ -33,13 +42,13 @@
         (
           "composer"=>Array
             (
-              "id"=>$rec["composer"],
-              "name"=>$rec["name"],
-              "epoch"=>$rec["epoch"]
+              "id"=>$obworks["works"]["w:". $rec["work"]]["composer"]["id"],
+              "name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["name"],
+              "epoch"=>$obworks["works"]["w:". $rec["work"]]["composer"]["epoch"]
             ),
            "id"=>$rec["work"],
-           "title"=>$rec["title"],
-           "genre"=>$rec["genre"],
+           "title"=>$obworks["works"]["w:". $rec["work"]]["title"],
+           "genre"=>$obworks["works"]["w:". $rec["work"]]["genre"],
         );
 
       $lastid = $rec["id"];

@@ -13,7 +13,7 @@
   // global constants
 
   define ("SOFTWARENAME", "Concertmaster");
-  define ("SOFTWAREVERSION", "1.19.05");
+  define ("SOFTWAREVERSION", "1.19.06");
   define ("USERAGENT", SOFTWARENAME. "/" . SOFTWAREVERSION. " ( ". SOFTWAREMAIL. " )");
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
@@ -31,14 +31,13 @@
   define ("SPOTIFYAPI", "https://api.spotify.com/v1");
   define ("SPOTIFYTOKENAPI", "https://accounts.spotify.com/api/token");
 
-  // performer roles keywords
+  // open opus 
 
-  $orchestra_kw = ['orchestra', 'symphony', 'philharmonic', 'philharmoniker', 'philharmonie', 'symphoniker', 'orchester', 'academy', 'orchestre', 'orchestra', 'orquesta', 'orquestra', 'orkester', 'orkest', 'philharmonia', 'academie', 'academia', 'accademia', 'akademie', 'society', 'societe', 'societa', 'sinfonietta', 'camerata', 'sinfonia', 'staatskapelle', 'strings', 'collegium', 'consortium'];
-  $ensemble_kw = ['ensemble', 'quartet', 'quintet', 'trio', 'duo', 'players', 'solisti', 'chamber'];
-  $choir_kw = ['choir', 'chorus', 'choral', 'cantorum', 'coro', 'singers', 'kammerchor', 'voices', 'kantorei', 'rundfunkchor', 'singakademie', 'vocale', 'knabenchor', 'singverein', 'sangerknaben', 'scholars'];
+  define ("OPENOPUS", "http://api.openopus.org");
 
-  // helper library
+  // helper libraries
 
+  include_once (UTILIB. "/lib.php");
   include_once (LIB. "/lib.php");
 
   // api init

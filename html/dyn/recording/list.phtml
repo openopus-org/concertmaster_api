@@ -3,8 +3,8 @@
 
   // try to find the work in the database
 
-  $work = mysqlfetch ($mysql, "select fullname, namesearch, epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, ifnull(subtitle,'') subtitle, ifnull (lower(searchtitle),lower(title)) searchtitle, lower(alternatetitles) alternatetitles, work.id from work, composer where work.id = {$_REQUEST["id"]} and composer.id=work.composer_id");
- 
+  $work = openopusdownparse ("work/detail/{$_REQUEST["id"]}.json");
+
   if (!$work)
   {
     // if the work doesn't exist, return an error
@@ -15,31 +15,14 @@
   {
     // work exists
 
-    if ($work[0]["searchtitle"] == strtolower ($work[0]["title"]))
-    {
-      $work[0]["searchtitle"] = worksimplifier ($work[0]["title"]);
-    }
-
-    $apireturn["work"] = Array
-      (
-        "composer"=>Array
-          (
-            "id"=>$work[0]["composer"],
-            "name"=>$work[0]["name"],
-            "epoch"=>$work[0]["epoch"]
-          ),
-         "id"=>$_REQUEST["id"],
-         "title"=>$work[0]["title"],
-         "subtitle"=>$work[0]["subtitle"],
-         "searchtitle"=>$work[0]["searchtitle"],
-         "genre"=>$work[0]["genre"]
-      );
+    $apireturn["work"] = arraydelete ($work, ["fullname", "namesearch", "alternatetitles"])["work"];
+    $apireturn["work"]["composer"] = $work["composer"];
 
     $apireturn["status"]["source"] = "ext";
 
     // searching spotify
 
-    $wid = $work[0]["id"];
+    $wid = $work["work"]["id"];
     $ii = -1;
 
     $spot = fetchspotify ($work, "albums", $_REQUEST["offset"]);
@@ -50,6 +33,18 @@
       $work[0]["title"] = str_replace ($matches[0][0], "", $work[0]["title"]);
       $spot = fetchspotify ($work, "albums", $_REQUEST["offset"]);
     }
+
+    $allperfs = [];
+
+    foreach ($spot["items"] as $spotalb => $spalb)
+    {
+      $allperfs = array_merge ($allperfs, end($spalb)["performers"]);
+    }
+
+    // guessing the performers
+
+    $perfs = openopusdownparse ("dyn/performer/list/", ["names"=>json_encode ($allperfs)]);
+    $rldb = $perfs["performers"]["digest"];
 
     // adding extradata to spotify results
 
@@ -71,7 +66,7 @@
           "spotify_albumid" => $alb["spotify_albumid"],
           "singletrack" => ($alb["tracks"] > 1) ? "false" : "true",
           "compilation" => $alb["compilation"] ? "true" : "false",
-          "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : $alb["performers"],
+          "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : allperformers ($alb["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]),
           "set" => ($alb["subset"]) ? $alb["subset"] : 1,
           "historic" => $alb["historic"] ? "true" : "false",
           "verified" => $alb["verified"] ? "true" : "false",

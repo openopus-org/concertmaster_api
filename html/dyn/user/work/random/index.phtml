@@ -1,0 +1,91 @@
+<?
+  include_once ("../../../../../lib/inc.php");
+
+  // filtering
+
+  if (!postcheck ($_REQUEST, ["id"]))
+  {
+    $apireturn["status"]["success"] = "false";
+    $apireturn["status"]["error"] = "Missing fields";
+  }
+  else
+  {
+    // everything ok
+
+    $apireturn["criteria"] = [];
+
+    if ($_REQUEST["genre"])
+    {
+      if ($_REQUEST["genre"] != "All")
+      {
+        $criteria["genre"] = $apireturn["criteria"]["genre"] = $_REQUEST["genre"];
+      }
+    }
+
+    if ($_REQUEST["epoch"])
+    {
+      if ($_REQUEST["epoch"] != "All")
+      {
+        $criteria["epoch"] = $apireturn["criteria"]["epoch"] = $_REQUEST["epoch"];
+      }
+    }
+
+    if ($_REQUEST["composer"])
+    {
+      if ($_REQUEST["composer"] == "fav")
+      {
+        $query = "select composer_id from user_composer where favorite=1 and user_id='{$_REQUEST["id"]}'";
+        $composer = mysqlfetch ($mysql, $query);
+        
+        $apireturn["criteria"]["composer"] = "fav";
+        $criteria["composer"] = implode (",", arraykeepvalues ($composer, ["composer_id"]));
+      }
+      else if ($_REQUEST["composer"] != "All")
+      {
+        $criteria["composer"] = $apireturn["criteria"]["composer"] = $_REQUEST["composer"];
+      }
+    }
+
+    if (!$_REQUEST["composer"] || $_REQUEST["composer"] == "All")
+    {
+      $query = "select composer_id from user_composer where forbidden=1 and user_id='{$_REQUEST["id"]}'";
+      $composernot = mysqlfetch ($mysql, $query);
+
+      $apireturn["criteria"]["composer_not"] = "forb";
+      $criteria["composer_not"] = implode (",", arraykeepvalues ($composernot, ["composer_id"]));
+    }
+
+    if ($_REQUEST["work"])
+    {
+      if ($_REQUEST["work"] == "fav")
+      {
+        $query = "select work_id from user_work where ". ($criteria["composer"] ? " composer_id in ({$criteria["composer"]}) and " : "") . " favorite=1 and user_id='{$_REQUEST["id"]}'";
+        $work = mysqlfetch ($mysql, $query);
+        
+        $apireturn["criteria"]["work"] = "fav";
+        $criteria["work"] = implode (",", arraykeepvalues ($work, ["work_id"]));
+      }
+      else if ($_REQUEST["work"] != "All")
+      {
+        $criteria["work"] = $apireturn["criteria"]["work"] = $_REQUEST["work"];
+      }
+    }
+
+    $obworks = openopusdownparse ("dyn/work/random/", $criteria);
+
+    if ($obworks["status"]["success"] != "true")
+    {
+      // returns an error
+
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"No works found");
+    }
+    else
+    {
+      // returns the works
+
+      $apireturn["status"] = Array ("success"=>"true");
+      $apireturn["works"] = $obworks["works"];
+    }
+  }
+
+  echo apireturn ($apireturn);

@@ -25,27 +25,6 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/playlist/(.*).json dyn/recording/playlist.phtml?id=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule composer/list/name/(.*).json dyn/composer/list.phtml?name=$1 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule composer/list/id/(.*).json dyn/composer/list.phtml?id=$1 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule composer/list/search/(.*).json dyn/composer/list.phtml?search=$1 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule composer/list/epoch/(.*).json dyn/composer/list.phtml?epoch=$1 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule work/list/composer/(.*)/genre/(.*)/search/(.*).json dyn/work/list.phtml?composer=$1&genre=$2&search=$3 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule work/list/composer/(.*)/(.*).json dyn/work/list.phtml?composer=$1&genre=$2 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule genre/list/composer/(.*).json dyn/genre/list.phtml?composer=$1 [L]
-
-RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule user/(.*)/recording/fav.json dyn/user/recording/fav.phtml?id=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -62,7 +41,4 @@ RewriteRule user/(.*)/composer/(.*)/work/fav.json dyn/user/work/fav.phtml?uid=$1
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule user/(.*)/composer/(.*)/work/fav/search/(.*).json dyn/user/work/fav.phtml?uid=$1&cid=$2&search=$3 [L]     
-
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule cover/(.*).jpg dyn/cover/img.phtml?img=$1 [L]
 </IfModule>

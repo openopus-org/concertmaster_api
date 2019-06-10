@@ -6,16 +6,13 @@
     // web server 
 
     define ("INFRADIR", "/var/www"); // base OS directory 
+    define ("UTILIB", INFRADIR. "/openopus_utils"); // directory for the utilities library
     define ("BASEDIR", INFRADIR. "/concertmaster_api"); // directory for all project, including public and non-public files
     define ("WEBDIR", BASEDIR. "/html"); // directory for publicly accessible files
     define ("LIB", BASEDIR. "/lib"); // directory for non-publicly accessible files, like libraries
     define ("LOG", BASEDIR. "/log"); // log dir
     define ("DEBUG", LOG. '/debug.txt'); // log file for some CURL operations detailed debug
     define ("TMP_DIR", "/tmp"); // OS temp directory
-
-    // url 
-
-    define ("PUBLIC_URL", "https://api.domain.tld"); // base URL of the public API
 
     // mysql 
 

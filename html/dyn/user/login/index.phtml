@@ -21,7 +21,7 @@
 
       $auth = md5 ($tok["id"]. "-". HASH_SALT);
 
-      $query = "insert into user (spotify_id, auth, name, email, country) values ('{$tok["id"]}', '$auth', '{$tok["display_name"]}', '{$tok["email"]}', '{$tok["country"]}')
+      $query = "insert into user (id, auth, name, email, country) values ('{$tok["id"]}', '$auth', '{$tok["display_name"]}', '{$tok["email"]}', '{$tok["country"]}')
                   on duplicate key update auth = '{$auth}', name = '{$tok["display_name"]}', email = '{$tok["email"]}', country = '{$tok["country"]}'";
       mysqli_query ($mysql, $query);
 

@@ -11,7 +11,7 @@
 
   if ($goquery)
   {
-    $composers = mysqlfetch ($mysql, "select id, name, complete_name, birth, death, epoch from composer, user_composer where user_id = '{$_REQUEST["id"]}' and id = composer_id and favorite=1 order by name asc");
+    $composers = mysqlfetch ($mysql, "select composer_id from user_composer where user_id = '{$_REQUEST["id"]}' and favorite=1");
 
     if (!$composers)
     {
@@ -21,11 +21,18 @@
     }
     else
     {
-      // there are composers, go list'em
+      // there are composers, fetch'em on the Open Opus API
 
+      foreach ($composers as $comp)
+      {
+        $complist[] = $comp["composer_id"];
+      }
+
+      $obcomposers = openopusdownparse ("composer/list/ids/". implode (",", $complist). ".json");
+    
       $apireturn["status"]["success"] = "true";
       $apireturn["status"]["source"] = "db";
-      $apireturn["composers"] = $composers;
+      $apireturn["composers"] = $obcomposers["composers"];
       $apireturn["status"]["rows"] = sizeof ($apireturn["composers"]);
     }
   }

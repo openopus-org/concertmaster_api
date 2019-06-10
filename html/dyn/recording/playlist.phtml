@@ -3,7 +3,7 @@
 
   // try to find the recording
 
-  $recordings = mysqlfetch ($mysql, "select concat(work.id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.subset, recording.spotify_albumid, work.id as work, work.genre, composer.epoch, composer.id as composer, composer.name, work.title, work.genre, spotify_imgurl as cover, performer, role from recording, recording_performer, composer, work, playlist_recording where composer.id = composer_id and work.id = recording.work_id and playlist_id = '{$_REQUEST["id"]}' and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and playlist_recording.work_id = recording.work_id and playlist_recording.subset = recording.subset and playlist_recording.spotify_albumid = recording.spotify_albumid order by position desc, composer.name asc, work.title asc, recording.spotify_albumid asc, recording.subset asc");
+  $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.subset, recording.spotify_albumid, recording.work_id as work, spotify_imgurl as cover, performer, role from recording, recording_performer, playlist_recording where playlist_id = '{$_REQUEST["id"]}' and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and playlist_recording.work_id = recording.work_id and playlist_recording.subset = recording.subset and playlist_recording.spotify_albumid = recording.spotify_albumid order by position desc, work asc, recording.spotify_albumid asc, recording.subset asc");
 
   if (!$recordings)
   {
@@ -15,7 +15,7 @@
   {
     // playlist details
 
-    $query = "select playlist.id as id, playlist.name as name, user.name as owner, user.spotify_id as owner_id from playlist, user where user_id=user.spotify_id and playlist.id = '{$_REQUEST["id"]}'";
+    $query = "select playlist.id as id, playlist.name as name, user.name as owner, user.id as owner_id from playlist, user where user_id=user.id and playlist.id = '{$_REQUEST["id"]}'";
     $playlist = mysqlfetch ($mysql, $query);
     $apireturn["playlist"] = Array 
       (
@@ -30,12 +30,22 @@
 
     // recordings
 
+    // open opus api call
+
+    foreach ($recordings as $rec)
+    {
+      $worklist[] = $rec["work"];
+    }
+
+    $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
+
     foreach ($recordings as $rec)
     {
       if ($lastid != $rec["id"])
       {
         $id = $id + 1;
-        $apireturn["recordings"][$id] = Array
+        $vid = slug ($obworks["works"]["w:". $rec["work"]]["composer"]["name"]. "-". $obworks["works"]["w:". $rec["work"]]["title"]. "-". $id);
+        $apireturn["recordings"][$vid] = Array
           (
             "spotify_albumid" => $rec["spotify_albumid"],
             "set" => $rec["subset"],
@@ -43,22 +53,26 @@
           );
       }
 
-      $apireturn["recordings"][$id]["performers"][] = Array ("name"=>$rec["performer"],"role"=>$rec["role"]);
-      $apireturn["recordings"][$id]["work"] = Array
+      $apireturn["recordings"][$vid]["performers"][] = Array ("name"=>$rec["performer"],"role"=>$rec["role"]);
+      $apireturn["recordings"][$vid]["work"] = Array
         (
           "composer"=>Array
             (
-              "id"=>$rec["composer"],
-              "name"=>$rec["name"],
-              "epoch"=>$rec["epoch"]
+              "id"=>$obworks["works"]["w:". $rec["work"]]["composer"]["id"],
+              "name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["name"],
+              "epoch"=>$obworks["works"]["w:". $rec["work"]]["composer"]["epoch"]
             ),
            "id"=>$rec["work"],
-           "title"=>$rec["title"],
-           "genre"=>$rec["genre"],
+           "title"=>$obworks["works"]["w:". $rec["work"]]["title"],
+           "genre"=>$obworks["works"]["w:". $rec["work"]]["genre"],
         );
 
       $lastid = $rec["id"];
     }
+
+    $apirecordings = $apireturn["recordings"];
+    ksort ($apirecordings);
+    $apireturn["recordings"] = array_values ($apirecordings);
   }
 
   if (isset ($apireturn["recordings"]))

@@ -4,7 +4,7 @@
 
   // try to find the work
 
-  $work = mysqlfetch ($mysql, "select fullname, namesearch, epoch, genre, composer_id as composer, composer.name, composer.complete_name, title, ifnull(subtitle,'') subtitle, ifnull (lower(searchtitle),lower(title)) searchtitle, lower(alternatetitles) alternatetitles, work.id from work, composer where work.id = {$_REQUEST["wid"]} and composer.id=work.composer_id");
+  $work = openopusdownparse ("work/detail/{$_REQUEST["wid"]}.json");
   
   if (!$work)
   {
@@ -16,27 +16,10 @@
   {
     // work exists
 
-    if ($work[0]["searchtitle"] == strtolower ($work[0]["title"]))
-    {
-      $work[0]["searchtitle"] = worksimplifier ($work[0]["title"]);
-    }
+    $work["recording"]["spotify_albumid"] = $_REQUEST["aid"];
 
-    $work[0]["spotify_albumid"] = $_REQUEST["aid"];
-
-    $apireturn["work"] = Array
-      (
-        "composer"=>Array
-          (
-            "id"=>$work[0]["composer"],
-            "name"=>$work[0]["name"],
-            "epoch"=>$work[0]["epoch"]
-          ),
-         "id"=>$_REQUEST["wid"],
-         "title"=>$work[0]["title"],
-         "subtitle"=>$work[0]["subtitle"],
-         "searchtitle"=>$work[0]["searchtitle"],
-         "genre"=>$work[0]["genre"],
-      );
+    $apireturn["work"] = arraydelete ($work, ["fullname", "namesearch", "alternatetitles"])["work"];
+    $apireturn["work"]["composer"] = $work["composer"];
     
     $apireturn["recording"] = Array
       (
@@ -59,6 +42,11 @@
       $work[0]["title"] = str_replace ($matches[0][0], "", $work[0]["title"]);
       $spot = fetchspotify ($work, "tracks");
     }
+
+    // guessing the performers
+
+    $perfs = openopusdownparse ("dyn/performer/list/", ["names"=>json_encode (end($spot["items"])["performers"])]);
+    $rldb = $perfs["performers"]["digest"];
 
     // adding extradata to spotify results
 
@@ -90,7 +78,7 @@
     $apireturn["recording"]["year"] = explode ("-", $spot["extras"]["year"])[0];
     $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
     $apireturn["recording"]["label"] = $spot["extras"]["label"];
-    $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? end($spotres)["extraperformers"]: end($spotres)["performers"];
+    $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? end($spotres)["extraperformers"]: allperformers (end($spotres)["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]);
   }
 
   // setting auxiliary trackset
