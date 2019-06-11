@@ -1,4 +1,4 @@
-Header set Access-Control-Allow-Origin "*"
+#Header set Access-Control-Allow-Origin "*"
 AddType 'application/json' .json
 FileETag None
 Header unset ETag
