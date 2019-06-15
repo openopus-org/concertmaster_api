@@ -14,6 +14,11 @@
 
     $apireturn["criteria"] = [];
 
+    if ($_REQUEST["popularwork"]) $criteria["popularwork"] = $apireturn["criteria"]["popularwork"] = 1;
+    if ($_REQUEST["recommendedwork"]) $criteria["recommendedwork"] = $apireturn["criteria"]["recommendedwork"] = 1;
+    if ($_REQUEST["popularcomposer"]) $criteria["popularcomposer"] = $apireturn["criteria"]["popularcomposer"] = 1;
+    if ($_REQUEST["recommendedcomposer"]) $criteria["recommendedcomposer"] = $apireturn["criteria"]["recommendedcomposer"] = 1;
+
     if ($_REQUEST["genre"])
     {
       if ($_REQUEST["genre"] != "All")
