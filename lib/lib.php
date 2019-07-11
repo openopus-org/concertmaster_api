@@ -37,7 +37,7 @@
       if (sizeof ($matches[0]))
       {
         $mode = "catalogue";
-        $search = end($matches[2]). " ". end($matches[7]);
+        $search = end($matches[2]). " ". end($matches[8]);
 
         if (strtolower (end($matches[2])) == "op" || strtolower (end($matches[2])) == "opus")
         {
@@ -195,7 +195,7 @@
 
       if ($mode == "catalogue")
       {
-        preg_match_all ('/('. str_replace (' ', '( )*', str_replace ("/", "\/", trim(end($matches[2])))). ')(( |\.))*('. str_replace (' ', '( )*', trim(end($matches[7]))). '($| |\W))/i', $alb["name"], $trmatches);
+        preg_match_all ('/('. str_replace (' ', '( )*', str_replace ("/", "\/", trim(end($matches[2])))). ')(( |\.))*('. str_replace (' ', '( )*', trim(end($matches[8]))). '($| |\W))/i', $alb["name"], $trmatches);
 
         if (sizeof ($trmatches[0])) 
         {
@@ -395,7 +395,7 @@
       {
         if ($ep["subset"] > 1 || $spot["items"]["{$ep["spotify_albumid"]}-{$ep["subset"]}"][0]["verified"])
         {
-          $spot["items"]["{$ep["spotify_albumid"]}-{$ep["subset"]}"][0]["performers"][] = $array;
+          $spot["items"]["{$ep["spotify_albumid"]}-{$ep["subset"]}"][0]["extraperformers"][] = $array;
         }
         else
         {
