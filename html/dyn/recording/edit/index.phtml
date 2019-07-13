@@ -8,33 +8,36 @@
     $apireturn["status"]["success"] = "false";
     $apireturn["status"]["error"] = "Authentication failed";
   }
-  else if (!postcheck ($_REQUEST, ["wid", "aid", "set"]))
+  else if (!postcheck ($_REQUEST, ["wid", "aid", "set", "cover", "performers"]))
   {
     $apireturn["status"]["success"] = "false";
     $apireturn["status"]["error"] = "Missing fields";
   }
   else
   {
-    if ($_REQUEST["observation"])
-    {
-      // updating the recording
+    // inserting the recording into the recording abstract database
 
-      $update = Array 
-      (
-        "observation" => $_REQUEST["observationvalue"]
-      );
+    insertrecording ($_REQUEST);
 
-      $where = Array 
-      (
-        "work_id" => $_REQUEST["wid"],
-        "spotify_albumid" => $_REQUEST["aid"],
-        "subset" => $_REQUEST["set"]
-      );
+    // recording edited is recording verified
 
-      $op = mysqlupdate ($mysql, "recording", $update, $where);
-    }
+    $update = Array 
+    (
+      "verified" => 1
+    );
 
-    if ($_REQUEST["performers"])
+    $where = Array 
+    (
+      "work_id" => $_REQUEST["wid"],
+      "spotify_albumid" => $_REQUEST["aid"],
+      "subset" => $_REQUEST["set"]
+    );
+
+    if ($_REQUEST["observation"]) $update["observation"] = $_REQUEST["observationvalue"];
+
+    $op = mysqlupdate ($mysql, "recording", $update, $where);
+
+    if ($_REQUEST["newperformers"])
     {
       // deleting performers
 
@@ -42,7 +45,7 @@
 
       // inserting performers
 
-      foreach (explode (PHP_EOL, $_REQUEST["performers"]) as $performer)
+      foreach (explode (PHP_EOL, $_REQUEST["newperformers"]) as $performer)
       {
         $inperformers = ["performer" => explode (",", $performer)[0], "role" => ucfirst (trim (explode (",", $performer)[1]))];
 
@@ -70,6 +73,7 @@
       mysqlmultinsert ($mysql, "recording_performer", $inss);
     }
     
+    /* to-do
     if ($_REQUEST["tracks"])
     {
       // deleting tracks
@@ -85,12 +89,13 @@
         mysqlinsert ($mysql, "track", $insst);
       }
     }
+    */
 
     $apireturn["status"]["success"] = "true";
     $apireturn["work"]["id"] = $_REQUEST["wid"];
     $apireturn["recording"] = ["spotify_albumid" => $_REQUEST["aid"], "subset" => $_REQUEST["set"]];
     if ($_REQUEST["observation"]) $apireturn["recording"]["observation"] = $_REQUEST["observationvalue"];
-    if ($_REQUEST["performers"]) $apireturn["recording"]["performers"] = arraykeep ($inss, ["performer", "role"]);
+    if ($_REQUEST["performers"]) $apireturn["recording"]["performers"] = arrayrenamekey (arraykeep ($inss, ["performer", "role"]), "performer", "name");
     if ($_REQUEST["tracks"]) $apireturn["recording"]["tracks"] = $intracks;      
     $apireturn["user"]["id"] = $_REQUEST["id"];
 

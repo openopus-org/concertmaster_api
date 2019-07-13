@@ -66,6 +66,7 @@
           "spotify_albumid" => $alb["spotify_albumid"],
           "singletrack" => ($alb["tracks"] > 1) ? "false" : "true",
           "compilation" => $alb["compilation"] ? "true" : "false",
+          "observation" => $alb["observation"],
           "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : allperformers ($alb["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]),
           "set" => ($alb["subset"]) ? $alb["subset"] : 1,
           "historic" => $alb["historic"] ? "true" : "false",
