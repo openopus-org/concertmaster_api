@@ -24,8 +24,7 @@
   define ("SAPI_PAGES", 5);
   define ("API_RETURN", "json");
   define ("HASH_SALT", "vUJmLwFgniCBmqcreBbsX9Jb");
-  define ("CATALOGUE_REGEX", "/\,( )*(bwv|hwv|op|opus|d|k|kv|hess|woo|fs|k\.anh|wq|w|sz|kk|m|s|h|trv|rv|jb ([0-9]+\:)|jw ([a-z]+\/)|(hob\.([a-z])+\:))( |\.)*(([0-9]+)([a-z])?)/i");
-
+  
   // spotify constants
 
   define ("SPOTIFYAPI", "https://api.spotify.com/v1");

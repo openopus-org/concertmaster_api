@@ -27,6 +27,14 @@
 
     $spot = fetchspotify ($work, "albums", $_REQUEST["offset"]);
 
+    if ($work["alternatetitles"])
+    {
+      foreach (explode (",", $work["alternatetitles"]) as $title)
+      {
+        $spot["recordings"] = array_merge ($spot["recordings"], fetchspotify ($work, "albums", $_REQUEST["offset"])["recordings"]);
+      }
+    }
+
     if (sizeof ($spot["items"]) <= 0 && $_REQUEST["offset"] >= 0)
     {
       preg_match_all (CATALOGUE_REGEX, $work[0]["title"], $matches);
