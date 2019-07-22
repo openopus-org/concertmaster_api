@@ -157,9 +157,9 @@
         {
           foreach ($wkdb as $wk)
           {
-            similar_text (str_replace (" ", "", $wk["searchterm"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0])), $sim);
+            similar_text (str_replace (" ", "", $wk["searchterm"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0], true)), $sim);
   
-            if (stripos (slug ($alb["name"]), slug ($wk["searchterm"])) !== false && $sim > $simwkdb) 
+            if (stripos (str_replace ('-', '', slug ($alb["name"])), str_replace ('-', '', slug ($wk["searchterm"]))) !== false && $sim > $simwkdb) 
             {
               $simwkdb = $sim;
               $mostwkdb = $wk["id"];
@@ -227,12 +227,12 @@
 
           $mostsimilar = $similarity;
         }
+        //else echo "\nREJECTED:". str_replace ('-', '', slug ($alb["name"]));
       }
     }
 
     $stats = Array 
       (
-        "term_used" => trim(urlencode ($search. " artist:{$work["composer"]["complete_name"]}")),
         "spotify_responses" => count ($spalbums["tracks"]["items"]),
         "useful_responses" => count (${$return}),
         "usefulness_rate" => round(100*(count (${$return})/count ($spalbums["tracks"]["items"])), 2). "%"

@@ -13,7 +13,7 @@
   // global constants
 
   define ("SOFTWARENAME", "Concertmaster");
-  define ("SOFTWAREVERSION", "1.19.07.13");
+  define ("SOFTWAREVERSION", "1.19.07.22");
   define ("USERAGENT", SOFTWARENAME. "/" . SOFTWAREVERSION. " ( ". SOFTWAREMAIL. " )");
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
