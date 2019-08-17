@@ -59,6 +59,7 @@
   if (isset ($apireturn["recordings"]))
   {
     $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
+    $apireturn["works"] = $obworks["abstract"];
   }
 
   echo savecache ("/user/{$_REQUEST["id"]}/recording/recent.json", apireturn ($apireturn));

@@ -65,6 +65,7 @@
   if (isset ($apireturn["recordings"]))
   {
     $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
+    $apireturn["works"] = $obworks["abstract"];
     
     foreach ($apireturn["recordings"] as $rec)
     {
