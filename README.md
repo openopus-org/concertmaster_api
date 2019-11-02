@@ -9,28 +9,28 @@ It's a public RESTful API which returns data in JSON format. There is a [wiki](h
 
 ## How to build
 
-1. Fork and clone this git repository to your webserver (for example, in the /var/www/ folder)
+1. Fork and clone this git repository to your webserver (for example, in the `/var/www/` folder)
 2. The Concertmaster API uses a shared [Open Opus utilities library](https://github.com/openopus-org/openopus_utils). Clone it in the same directory
-3. Create a MySQL database (for example, app_concertmaster) and load its strucuture
+3. Create a MySQL database (for example, `app_concertmaster`) and load its strucuture
 
 ```bash
 mysql -u USER -p app_concertmaster < /var/www/concertmaster_api/sql/app_concertmaster.sql
 ```
 
-4. Create an inc.php file from the example:
+4. Create an `inc.php` file from the example:
 
 ```bash
 cd /var/www/concertmaster_api/lib/
 cp inc-example.php inc.php
 vim inc.php
 ```
-5. Change variable values in the inc.php accordingly to your webserver and Spotify API params (you can create a Spotify dev account [here](https://developer.spotify.com/))
+5. Change variable values in the `lib/inc.php` accordingly to your webserver and Spotify API params (you can create a Spotify dev account [here](https://developer.spotify.com/))
 
 ### Cache and cache cleaning routines
 
 The Concertmaster API can cache its results, saving server resources. In order to activate this feature you must:
 
-1. Give ownership of the public directory to the web server group (e.g., www-data):
+1. Give ownership of the public directory to the web server group (e.g., `www-data`):
 
 ```bash
 chgrp www-data /var/www/concertmaster_api/html -R
@@ -55,7 +55,7 @@ export BASEHTMLDIR="/var/www/concertmaster_api/html"
 
 ## Domains
 
-There is a single public directory in the project (*/html*) and it must have its own virtual host on your webserver. (For example, we host it at [api.concertmaster.app](https://api.concertmaster.app).)
+There is a single public directory in the project (`/html`) and it must have its own virtual host on your webserver. (For example, we host it at [api.concertmaster.app](https://api.concertmaster.app).)
 
 The API *must* be served with HTTPS. You can use a free [Let's Encrypt](https://letsencrypt.org/)-provided certificate, it's perfectly fine.
 
@@ -73,7 +73,7 @@ Change the domains above to the ones your app will use.
 
 #### CORS in development environments
 
-In order the make the API available to a local, dev application, edit the *html/.htaccess* file and change the domain for the one your dev environment will use.
+In order the make the API available to a local, dev application, edit the `html/.htaccess` file and change the domain for the one your dev environment will use.
 
 ## Contributing with code
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
