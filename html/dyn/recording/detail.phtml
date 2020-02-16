@@ -67,7 +67,7 @@
 
     $apireturn["recording"]["verified"] = $spot["extras"]["verified"] ? "true" : "false";
     $apireturn["recording"]["cover"] = $spot["extras"]["cover"];
-    $apireturn["recording"]["set"] = $_REQUEST["set"];
+    $apireturn["recording"]["set"] = intval ($_REQUEST["set"]);
     $apireturn["recording"]["year"] = explode ("-", $spot["extras"]["year"])[0];
     $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
     $apireturn["recording"]["label"] = $spot["extras"]["label"];
