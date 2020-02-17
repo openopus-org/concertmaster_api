@@ -71,7 +71,7 @@
     $apireturn["recording"]["year"] = explode ("-", $spot["extras"]["year"])[0];
     $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
     $apireturn["recording"]["label"] = $spot["extras"]["label"];
-    $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? end($spotres)["extraperformers"]: allperformers (end($spotres)["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]);
+    $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? orderperformers (end($spotres)["extraperformers"]): allperformers (end($spotres)["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]);
   }
 
   // setting auxiliary trackset

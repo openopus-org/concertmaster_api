@@ -60,7 +60,7 @@
           "singletrack" => ($alb["tracks"] > 1) ? "false" : "true",
           "compilation" => $alb["compilation"] ? "true" : "false",
           "observation" => $alb["observation"],
-          "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : allperformers ($alb["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]),
+          "performers" => ($alb["extraperformers"]) ? orderperformers ($alb["extraperformers"]) : allperformers ($alb["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]),
           "set" => ($alb["subset"]) ? intval ($alb["subset"]) : 1,
           "historic" => $alb["historic"] ? "true" : "false",
           "verified" => $alb["verified"] ? "true" : "false",
