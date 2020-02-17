@@ -61,7 +61,7 @@
           "compilation" => $alb["compilation"] ? "true" : "false",
           "observation" => $alb["observation"],
           "performers" => ($alb["extraperformers"]) ? $alb["extraperformers"] : allperformers ($alb["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]),
-          "set" => ($alb["subset"]) ? $alb["subset"] : 1,
+          "set" => ($alb["subset"]) ? intval ($alb["subset"]) : 1,
           "historic" => $alb["historic"] ? "true" : "false",
           "verified" => $alb["verified"] ? "true" : "false",
           "recommended" => $alb["recommended"] ? "true" : "false"
