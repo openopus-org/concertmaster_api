@@ -74,12 +74,16 @@
     $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? orderperformers (end($spotres)["extraperformers"]): allperformers (end($spotres)["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]);
   }
 
-  // setting auxiliary trackset
+  // setting auxiliary trackset & setting tracks starting points
 
   if (isset ($apireturn["recording"]["tracks"]) && $apireturn["recording"]["spotify_albumid"])
   {
+    $acctiming = 0;
+
     foreach ($apireturn["recording"]["tracks"] as $trid => $track)
     {
+      $apireturn["recording"]["tracks"][$trid]["starting_point"] = $acctiming;
+      $acctiming += $track["length"];
       $apireturn["recording"]["spotify_tracks"][] = "spotify:track:". $apireturn["recording"]["tracks"][$trid]["spotify_trackid"];
     }
   }
