@@ -49,12 +49,14 @@
 
     $spotres = $spot["items"];
     $apireturn["status"]["stats"] = $spot["stats"];
+    $index = 0;
 
     foreach ($spotres as $tart)
     {
       $trinsert[] = Array
       (
         "cd" => $tart["cd"],
+        "index" => $index++,
         "position" => $tart["position"],
         "length" => $tart["length"],
         "title" => $tart["title"],
