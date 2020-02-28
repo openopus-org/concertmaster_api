@@ -210,8 +210,10 @@
               "spotify_imgurl" => $alb["album"]["images"][0]["url"],
               "spotify_albumid" => $alb["album"]["id"],
               "performers" => $performers,
-              "tracks" => sizeof ($albums[$alb["album"]["id"]])+1
+              "tracks" => (in_array ($alb["id"], $usedtracks) ? sizeof ($albums[$alb["album"]["id"]]) : sizeof ($albums[$alb["album"]["id"]])+1)
             );
+
+            $usedtracks[] = $alb["id"];
 
             $tracks[] = Array 
             (
