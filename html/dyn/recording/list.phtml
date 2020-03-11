@@ -25,7 +25,7 @@
     $wid = $work["work"]["id"];
     $ii = -1;
 
-    $spot = fetchspotify ($work, "albums", $_REQUEST["offset"]);
+    $spot = fetchspotify ($work, "albums", $_REQUEST["offset"], $_REQUEST["pagelimit"]);
 
     $allperfs = [];
 

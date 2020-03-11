@@ -18,7 +18,7 @@
 
   // fetch and analyze spotify metadata
 
-  function fetchspotify ($work, $return, $offset = 0)
+  function fetchspotify ($work, $return, $offset = 0, $pagelimit = 0)
   {
     global $mysql;
     
@@ -58,7 +58,7 @@
         $loop = 1;
         //$spalbums["tracks"]["next"] = $offset + SAPI_ITEMS;
 
-        while ($tspalbums["tracks"]["next"] && $loop <= SAPI_PAGES)
+        while ($tspalbums["tracks"]["next"] && $loop <= ($pagelimit ? $pagelimit : SAPI_PAGES))
         {
           $morealbums = spotifydownparse ($tspalbums["tracks"]["next"], $token);
           $tspalbums["tracks"]["items"] = array_merge ($tspalbums["tracks"]["items"], $morealbums["tracks"]["items"]);
