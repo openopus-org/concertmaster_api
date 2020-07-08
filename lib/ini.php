@@ -39,6 +39,10 @@
   include_once (UTILIB. "/lib.php");
   include_once (LIB. "/lib.php");
 
+  // likely trashy compilation albums
+
+  define ("COMPILATION_TERMS", "clas sleep rela babies kids mind lounge essen best dream");
+
   // api init
 
   $starttime = microtime (true);
