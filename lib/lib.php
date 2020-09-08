@@ -56,6 +56,7 @@
       {
         $tspalbums = spotifydownparse (SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=track:". trim(urlencode ($search. " artist:{$work["composer"]["complete_name"]}")), $token);
         $loop = 1;
+
         //$spalbums["tracks"]["next"] = $offset + SAPI_ITEMS;
 
         while ($tspalbums["tracks"]["next"] && $loop <= ($pagelimit ? $pagelimit : SAPI_PAGES))
@@ -155,6 +156,8 @@
         }
         else
         {
+          $alb["name"] = str_replace ("&", "and", $alb["name"]);
+
           foreach ($wkdb as $wk)
           {
             similar_text (str_replace (" ", "", $wk["searchterm"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0], true)), $sim);
