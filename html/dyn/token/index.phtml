@@ -1,22 +1,44 @@
 <?
   include_once ("../../../lib/inc.php");
 
-  $api = CURL_Internals (SPOTIFYTOKENAPI, false, Array (SPOTIFYID, SPOTIFYSECRET), "refresh_token={$_REQUEST['token']}&grant_type=refresh_token", false);
-  $apireturn["auth"] = json_decode ($api, true);
-
-  if ($apireturn["auth"]["error"] == "invalid_grant")
+  if ($_REQUEST["code"])
   {
-    $apireturn["status"]["success"] = "false";
-    $apireturn["status"]["error"] = "Broken token";
+    $params = "grant_type=authorization_code&redirect_uri=". SPOTIFYCBURL. "&code={$_REQUEST["code"]}";
   }
-  else if ($apireturn["auth"]["error"] == "invalid_request")
+  else if ($_REQUEST["token"])
   {
-    $apireturn["status"]["success"] = "false";
-    $apireturn["status"]["error"] = "No token provided";
+    $params = "refresh_token={$_REQUEST['token']}&grant_type=refresh_token";
   }
   else
   {
-    $apireturn["status"]["success"] = "true";
+    $params = "refresh_token=". file_get_contents('php://input'). "&grant_type=refresh_token";
   }
 
-  echo apireturn ($apireturn);
+  $api = CURL_Internals (SPOTIFYTOKENAPI, false, Array (SPOTIFYID, SPOTIFYSECRET), $params, false);
+
+  if ($_REQUEST["token"])
+  {
+    $apireturn["auth"] = json_decode ($api, true);
+
+    if ($apireturn["auth"]["error"] == "invalid_grant")
+    {
+      $apireturn["status"]["success"] = "false";
+      $apireturn["status"]["error"] = "Broken token";
+    }
+    else if ($apireturn["auth"]["error"] == "invalid_request")
+    {
+      $apireturn["status"]["success"] = "false";
+      $apireturn["status"]["error"] = "No token provided";
+    }
+    else
+    {
+      $apireturn["status"]["success"] = "true";
+    }
+
+    echo apireturn ($apireturn);
+  }
+  else
+  {
+    echo $api;
+  }
+  

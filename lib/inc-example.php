@@ -29,6 +29,7 @@
 
     define ("SPOTIFYID", "lots of letters and numbers"); // spotify dev account id
     define ("SPOTIFYSECRET", "lots of letters and numbers"); // spotify dev account secret string
+    define ("SPOTIFYCBURL", "scheme://url"); // one of your spotify callback urls
 
     // debug
 
