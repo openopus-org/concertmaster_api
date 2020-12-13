@@ -12,10 +12,16 @@ Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"
 RewriteEngine on
 
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/list/work/(.*)/(.*)/(.*).json dyn/recording/list.phtml?id=$1&offset=$3&extra=$2 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/work/(.*)/(.*).json dyn/recording/list.phtml?id=$1&offset=$2 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule recording/(.*)/list/work/(.*)/(.*).json dyn/recording/list.phtml?id=$2&offset=$3&market=$3 [L]
+RewriteRule recording/(.*)/list/work/(.*)/(.*)/(.*).json dyn/recording/list.phtml?id=$2&offset=$4&market=$1&extra=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/(.*)/list/work/(.*)/(.*).json dyn/recording/list.phtml?id=$2&offset=$3&market=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/abridged/work/(.*)/(.*).json dyn/recording/list.phtml?id=$1&offset=$2&limitpage=1 [L]

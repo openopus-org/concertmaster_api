@@ -18,7 +18,7 @@
 
   // fetch and analyze spotify metadata
 
-  function fetchspotify ($work, $return, $market = "", $offset = 0, $pagelimit = 0)
+  function fetchspotify ($work, $return, $market = "", $extra = "", $offset = 0, $pagelimit = 0)
   {
     global $mysql;
     
@@ -54,6 +54,7 @@
     { 
       foreach ($work["work"]["searchterms"] as $search)
       {
+        if ($extra) $search .= " ". $extra;
         $spturl = SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=track:". trim(urlencode ($search. " artist:{$work["composer"]["complete_name"]}"));
 
         if ($market) $spturl .= "&market={$market}";
