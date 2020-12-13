@@ -87,7 +87,7 @@
     if (isset ($apireturn["recordings"]))
     {
       $apireturn["status"] = Array ("success"=>"true", "stats"=> $spot["stats"]);
-      $apireturn = compilationdigest ($apireturn);
+      $apireturn = compilationdigest ($apireturn, false, true);
     }
     else
     {
