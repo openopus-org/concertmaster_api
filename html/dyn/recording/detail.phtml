@@ -34,7 +34,7 @@
     $apireturn["recording"]["length"] = 0;
     $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
 
-    $spot = fetchspotify ($work, "tracks");
+    $spot = fetchspotify ($work, "tracks", $_REQUEST["market"]);
 
     // guessing the performers
 
@@ -90,4 +90,11 @@
     }
   }
 
-  echo savecache ("/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json", apireturn ($apireturn));
+  if ($_REQUEST["market"])
+  {
+    echo savecache ("/recording/{$_REQUEST["market"]}/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json", apireturn ($apireturn));
+  }
+  else
+  {
+    echo savecache ("/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json", apireturn ($apireturn));
+  }

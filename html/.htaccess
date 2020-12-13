@@ -15,10 +15,16 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/work/(.*)/(.*).json dyn/recording/list.phtml?id=$1&offset=$2 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/(.*)/list/work/(.*)/(.*).json dyn/recording/list.phtml?id=$2&offset=$3&market=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/abridged/work/(.*)/(.*).json dyn/recording/list.phtml?id=$1&offset=$2&limitpage=1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/detail/work/(.*)/album/(.*)/(.*).json dyn/recording/detail.phtml?wid=$1&aid=$2&set=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/(.*)/detail/work/(.*)/album/(.*)/(.*).json dyn/recording/detail.phtml?wid=$2&aid=$3&set=$4&market=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/shorturl/work/(.*)/album/(.*)/(.*).json dyn/recording/shorten.phtml?wid=$1&aid=$2&set=$3 [L]

@@ -25,7 +25,7 @@
     $wid = $work["work"]["id"];
     $ii = -1;
 
-    $spot = fetchspotify ($work, "albums", $_REQUEST["offset"], $_REQUEST["pagelimit"]);
+    $spot = fetchspotify ($work, "albums", $_REQUEST["market"], $_REQUEST["offset"], $_REQUEST["pagelimit"]);
 
     $allperfs = [];
 
@@ -96,4 +96,11 @@
     }
   }
 
-  echo savecache ("/recording/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+  if ($_REQUEST["market"])
+  {
+    echo savecache ("/recording/{$_REQUEST["market"]}/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+  }
+  else
+  {
+    echo savecache ("/recording/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+  }
