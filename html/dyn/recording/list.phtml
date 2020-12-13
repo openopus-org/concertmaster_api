@@ -41,7 +41,10 @@
 
     // adding extradata to spotify results
 
-    $spot = extradata ($spot, Array ("wid"=>$_REQUEST["id"]));
+    if (!$_REQUEST["extra"])
+    {
+      $spot = extradata ($spot, Array ("wid"=>$_REQUEST["id"]));
+    }
 
     // preparing data 
 
