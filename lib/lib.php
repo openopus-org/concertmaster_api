@@ -216,7 +216,7 @@
               "year" => $year,
               "spotify_imgurl" => $alb["album"]["images"][0]["url"],
               "spotify_albumid" => $alb["album"]["id"],
-              "album_name" => $alb["name"],
+              "album_name" => $alb["album"]["name"],
               "performers" => $performers,
               "tracks" => (in_array ($alb["id"], $usedtracks) ? sizeof ($albums[$alb["album"]["id"]]) : sizeof ($albums[$alb["album"]["id"]])+1)
             );
