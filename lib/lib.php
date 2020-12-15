@@ -257,6 +257,208 @@
     return Array ("type"=> $return, "items"=>${$return}, "stats"=>$stats, "extras"=>$extras);
   }
 
+  function searchspotify ($search, $offset = 0, $market = "")
+  {
+    // fetching spotify api
+
+    $token = spotifyauth ();
+    $spturl = SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=". trim(urlencode ($search. " genre:classical"));
+    if ($market) $spturl .= "&market={$market}";
+
+    $amres = spotifydownparse ($spturl, $token);
+    $loop = 1;
+
+    while ($amres["tracks"]["next"] && $loop <= SAPI_PAGES)
+    {
+      $amresmore = spotifydownparse ($amres["tracks"]["next"], $token);
+      $amres["tracks"]["items"] = array_merge ($amres["tracks"]["items"], $amresmore["tracks"]["items"]);
+      $amres["tracks"]["next"] = $amresmore["tracks"]["next"];
+      $loop++;
+    }
+
+    // grouping by album id, composer name and work title
+
+    foreach ($amres["tracks"]["items"] as $alb)
+    {
+      unset ($performers);
+
+      if (sizeof ($alb["artists"]) > 1)
+      {
+        foreach ($alb["artists"] as $kart => $art)
+        {
+          if ($kart && !strpos ($art["name"], "/"))
+          {
+            $performers[] = $art["name"];
+          }
+        }
+
+        if ($alb["album"]["release_date_precision"] == "day") 
+        {
+          $year = $alb["album"]["release_date"];
+        }
+        else if ($alb["album"]["release_date_precision"] == "month") 
+        {
+          $year = $alb["album"]["release_date"]. "-01";
+        }
+        else
+        {
+          $year = $alb["album"]["release_date"]. "-01-01";
+        }
+
+        $spotify_albumid = $alb["album"]["id"];
+
+        if (!isset ($return[$spotify_albumid]))
+        {
+          $return[$spotify_albumid] = Array 
+          (
+            "cover" => $alb["album"]["images"][0]["url"],
+            "year" => $year,
+            "album_name" => $alb["album"]["name"],
+            "id" => $spotify_albumid
+          );
+        }
+
+        unset ($subtitle);
+
+        $alb["name"] = str_replace (end (explode (" ", $alb["artists"][0]["name"])), "", str_replace (end (explode (" ", $alb["artists"][0]["name"])). ": ", "", str_replace ($alb["artists"][0]["name"], "", str_replace ($alb["artists"][0]["name"]. ": ", "", $alb["name"]))));
+        $alb["name"] = preg_replace ('/^(( )*( |\,|\(|\'|\"|\-|\;|\:)( )*)/i', '', $alb["name"], 1);
+        $work_title = explode (":", $alb["name"])[0];
+
+        preg_match ('/(\(.*?\))/i', $alb["name"], $matches);
+
+        if (sizeof ($matches) > 0)
+        {
+          $subtitle = $matches[sizeof ($matches)-1];
+          $work_title = str_replace ($subtitle, "", $work_title);
+          $subtitle = preg_replace ('/\(|\)/', '', $subtitle);
+        }
+
+        $work_title = trim ($work_title);
+
+        $compworks[str_replace ("-", "", slug ($alb["artists"][0]["name"])). str_replace ("-", "", workslug ($work_title))] = ["composer" => $alb["artists"][0]["name"], "title" => $work_title];
+
+        $singletrack = (isset ($return[$spotify_albumid]["tracks"][str_replace ("-", "", slug ($alb["artists"][0]["name"]))][str_replace ("-", "", workslug ($work_title))]) ? "false" : "true");
+
+        // returning array
+
+        $return[$spotify_albumid]["tracks"][str_replace ("-", "", slug ($alb["artists"][0]["name"]))][str_replace ("-", "", workslug ($work_title))][] = Array 
+          (
+            "id" => $alb["id"],
+            "full_title" => $alb["name"],
+            "title" => $work_title,
+            "subtitle" => trim ($subtitle),
+            "composer" => $alb["artists"][0]["name"],
+            "performers" => $performers,
+            "singletrack" => $singletrack
+          );
+      }
+    }
+
+    // guessing composer and works
+
+    $guessedworks = openopusdownparse ("dyn/work/guess/", ["works"=>json_encode (array_values ($compworks))]);
+
+    foreach ($guessedworks["works"] as $gwork)
+    {
+      $worksdb[str_replace ("-", "", slug ($gwork["requested"]["composer"])). "-". str_replace ("-", "", workslug ($gwork["requested"]["title"]))] = $gwork["guessed"];
+    }
+
+    foreach ($guessedworks["composers"] as $gcmp)
+    {
+      $compsdb[str_replace ("-", "", slug ($gcmp["requested"]))] = $gcmp["guessed"];
+    }
+
+    $allperformers = Array ();
+
+    foreach ($return as $spotify_albumid => $albums)
+    {
+      foreach ($albums["tracks"] as $comp => $wks)
+      {
+        foreach ($wks as $wk => $tracks)
+        {
+          foreach ($tracks as $trk)
+          {
+            $allperformers = array_merge ($allperformers, $trk["performers"]);
+          }
+
+          $track = $tracks[0];
+
+          if (isset ($worksdb[$comp. "-". $wk]))
+          {
+            $rwork = $worksdb[$comp. "-". $wk];
+          }
+          else 
+          {
+            $rwork = [
+              "id" => "at*{$track["id"]}", 
+              "title" => $track["title"], 
+              "genre"=>"None"];
+
+            if (isset ($compsdb[str_replace ("-", "", slug ($track["composer"]))]))
+            {
+              $rwork["composer"] = $compsdb[str_replace ("-", "", slug ($track["composer"]))];
+            }
+            else
+            {
+              $rwork["composer"] = [
+                "complete_name" => $track["composer"],
+                "id" => "0",
+                "name" => $track["composer"],
+                "epoch" => "None"]; 
+            }
+          }
+
+          $rreturn[] = Array
+            (
+              "spotify_albumid" => $spotify_albumid,
+              "set" => $track["id"],
+              "verified" => "false",
+              "cover" => $albums["cover"],
+              "performers" => $track["performers"],
+              "work" => $rwork,
+              "album_name" => $albums["album_name"],
+              "compilation" => "false",
+              "singletrack" => $track["singletrack"],
+              "tracks" => $tracks
+            );
+        }
+      }
+    }
+
+    // detecting multiple recordings of a same work in an album
+ 
+    $perfsdb = openopusdownparse ("dyn/performer/list/", ["names"=>json_encode ($allperformers)]);
+
+    foreach ($rreturn as $album)
+    {
+      foreach ($album["tracks"] as $track)
+      {
+        $fullperformers = allperformers ($track["performers"], $perfsdb["performers"]["digest"], $album["work"]["composer"]["complete_name"]);
+
+        if (sizeof ($track["performers"]) <= 5 || arrayitems (["Orchestra", "Conductor"], "role", $fullperformers))
+        {
+          $performers = array_slice ($fullperformers, -2, 2, true);
+        }
+        else
+        {
+          $performers = [["name" => "Several", "role" => "Several"]];
+        }
+
+        $newkey = "wkid-". $album["work"]["id"]. "-". $album["spotify_albumid"] . "-". slug(implode ("-", arraykeepvalues ($performers, ["name"])));
+        
+        $newreturn[$newkey] = $album;
+        $newreturn[$newkey]["performers"] = $fullperformers;
+        $newreturn[$newkey]["set"] = $track["id"];
+        $newreturn[$newkey]["recording_id"] = $newkey;
+        unset ($newreturn[$newkey]["tracks"]);
+      }
+    }
+
+    $rreturn = $newreturn;
+
+    return ["recordings" => $rreturn, "next" => $amres["tracks"]["next"]];
+  }
+
   // add concertmaster own extradata to spotify metadata
 
   function extradata ($spot, $params)

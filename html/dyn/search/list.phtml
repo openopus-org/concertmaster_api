@@ -1,0 +1,56 @@
+<?
+    ob_start ();
+    
+    $_REQUEST["originaloffset"] = $_REQUEST["offset"];
+
+    if ($_REQUEST["offset"] >= 1000000)
+    {
+        $_REQUEST["offset"] = $_REQUEST["offset"] - 1000000;
+        $mode = "freesearch";
+    }
+    else
+    {
+        $mode = "omnisearch";
+    }
+
+    if ($mode == "omnisearch")
+    {
+        include_once ("../omnisearch/list.phtml");
+        ob_clean ();
+
+        if (sizeof ($apireturn["recordings"]) < 1)
+        {
+            $_REQUEST["search"] = $_REQUEST["originalsearch"];
+
+            unset ($apireturn);
+            $apireturn["status"] = [];
+            $mode = "freesearch";
+        }
+        else
+        {
+            if (!$apireturn["next"])
+            {
+                $apireturn["next"] = 1000000;
+            }
+        }
+    }
+
+    if ($mode == "freesearch")
+    {
+        include_once ("../freesearch/list.phtml");
+        ob_clean ();
+
+        if ($apireturn["next"])
+        {
+            $apireturn["next"] = 1000000 + $apireturn["next"];
+        }
+    }
+
+    if ($_REQUEST["market"])
+    {
+        echo savecache ("/search/{$_REQUEST["market"]}/{$_REQUEST["originalsearch"]}/{$_REQUEST["originaloffset"]}.json", apireturn ($apireturn));
+    }
+    else
+    {
+        echo savecache ("/search/{$_REQUEST["originalsearch"]}/{$_REQUEST["originaloffset"]}.json", apireturn ($apireturn));
+    }

@@ -13,7 +13,7 @@
   // global constants
 
   define ("SOFTWARENAME", "Concertmaster");
-  define ("SOFTWAREVERSION", "1.19.08");
+  define ("SOFTWAREVERSION", "1.20.12");
   define ("USERAGENT", SOFTWARENAME. "/" . SOFTWAREVERSION. " ( ". SOFTWAREMAIL. " )");
   define ("RECRETS", 60);
   define ("MIN_SIMILAR", 40);
@@ -33,6 +33,10 @@
   // open opus 
 
   define ("OPENOPUS", "http://api.openopus.org");
+
+  // omnisearch forbidden words
+
+  $omnisearch_forbidden = Array ("symphony", "symphonique", "symphoniker", "symphonie", "sinfonietta", "orquesta", "orchestra", "symphonic", "philharmonic", "duo", "trio", "quartet", "quintet", "sextet", "septet", "octet", "opera", "the", "and", "of", "by", "from");
 
   // helper libraries
 

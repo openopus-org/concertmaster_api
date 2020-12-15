@@ -57,5 +57,23 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule user/(.*)/composer/(.*)/work/fav.json dyn/user/work/fav.phtml?uid=$1&cid=$2 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule user/(.*)/composer/(.*)/work/fav/search/(.*).json dyn/user/work/fav.phtml?uid=$1&cid=$2&search=$3 [L]     
+RewriteRule user/(.*)/composer/(.*)/work/fav/search/(.*).json dyn/user/work/fav.phtml?uid=$1&cid=$2&search=$3 [L] 
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule omnisearch/(.*)/(.*)/(.*).json dyn/omnisearch/list.phtml?country=$1&search=$2&offset=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule omnisearch/(.*)/(.*).json dyn/omnisearch/list.phtml?search=$1&offset=$2 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule freesearch/(.*)/(.*)/(.*).json dyn/freesearch/list.phtml?market=$1&search=$2&offset=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule freesearch/(.*)/(.*).json dyn/freesearch/list.phtml?search=$1&offset=$2 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule search/(.*)/(.*)/(.*).json dyn/search/list.phtml?market=$1&search=$2&offset=$3 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule search/(.*)/(.*).json dyn/search/list.phtml?search=$1&offset=$2 [L]
 </IfModule>

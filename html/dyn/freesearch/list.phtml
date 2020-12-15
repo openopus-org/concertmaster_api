@@ -1,0 +1,112 @@
+<?
+  include_once ("../../../lib/inc.php");
+  
+  $apireturn["request"]["type"] = "freesearch";
+  $apireturn["request"]["search"] = $_REQUEST["search"];
+  $apireturn["request"]["offset"] = $_REQUEST["offset"];
+
+  if ($_REQUEST["search"])
+  {
+    // fetching and analyzing spotify results
+
+    $spot = searchspotify ($_REQUEST["search"], $_REQUEST["offset"], $_REQUEST["market"]);
+
+    $spotfirstres = $spot["recordings"];
+
+    // filtering out the results
+
+    $forbidden = implode ("|", $omnisearch_forbidden);
+    $forbidden_regexp = '/\b('. $forbidden. ')\b/i';
+
+    $top_spotres = [];
+    $mid_spotres = [];
+    $bottom_spotres = [];
+
+    foreach ($spotfirstres as $alb)
+    {
+      $composersummary = $alb["work"]["composer"]["complete_name"];
+      $worksummary = $composersummary. " ". $alb["work"]["title"];
+      $recordingsummary = $worksummary. " ". preg_replace ($forbidden_regexp, "", implode (" ", arraykeepvalues ($alb["performers"], ["name"])));
+
+      if (in_string ($_REQUEST["search"], $recordingsummary))
+      {
+        if (in_string ($_REQUEST["search"], $composersummary))
+        {
+          $top_spotres[] = $alb;
+        }
+        else if (in_string ($_REQUEST["search"], $worksummary))
+        {
+          $mid_spotres[] = $alb;
+        }
+        else
+        {
+          $bottom_spotres[] = $alb;
+        }
+      }
+    }
+
+    $spotres = array_merge ($top_spotres, $mid_spotres, $bottom_spotres);
+    
+    // adding the performers to the recording items
+
+    foreach ($spotres as $k => $alb)
+    {
+      if (stripos ($alb["work"]["id"], "at*") === false)
+      {
+        $returnworks[$alb["work"]["id"]] = $alb["work"];
+      }
+
+      if ($alb["work"]["composer"]["id"])
+      {
+        $returncomposers[$alb["work"]["composer"]["id"]] = $alb["work"]["composer"];
+      }
+    }
+
+    $apireturn["recordings"] = $spotres;
+  }
+
+  if (isset ($apireturn["recordings"]))
+  {
+    if (sizeof ($returnworks) == 1)
+    {
+      $apireturn["works"] = array_values ($returnworks);
+    }
+    
+    if (sizeof ($returncomposers) == 1)
+    {
+      $apireturn["composers"] = array_values ($returncomposers);
+    }
+    
+    $apireturn["status"] = Array ("success"=>"true", "source" => "ext", "rows"=>sizeof ($apireturn["recordings"]), "market"=>($_REQUEST["market"] ? $_REQUEST["market"] : ""));  
+    $apireturn["status"]["stats"] = Array 
+    (
+      "spotify_responses" => count ($spotfirstres),
+      "useful_responses" => $apireturn["status"]["rows"],
+      "usefulness_rate" => round(100*($apireturn["status"]["rows"]/count ($spotfirstres)), 2). "%"
+    );
+
+    if ($spot["next"])
+    {
+      parse_str (parse_url ($spot["next"])["query"], $next);
+      $apireturn["next"] = $next["offset"];
+    }
+
+    $apireturn = compilationdigest ($apireturn, true);
+
+    if ($_REQUEST["market"])
+    {
+      echo savecache ("/freesearch/{$_REQUEST["market"]}/{$_REQUEST["search"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    }
+    else
+    {
+      echo savecache ("/freesearch/{$_REQUEST["search"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    }
+  }
+  else
+  {
+    $apireturn["status"] = Array ("success"=>"false", "source" => "ext", "error"=>"No recordings found");
+    unset ($apireturn["recordings"]);
+
+    echo apireturn ($apireturn);
+  }
+  

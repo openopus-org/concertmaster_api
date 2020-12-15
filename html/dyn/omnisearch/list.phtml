@@ -1,0 +1,225 @@
+<?
+  include_once ("../../../lib/inc.php");
+  
+  $apireturn["request"]["type"] = "omnisearch";
+  $apireturn["request"]["search"] = $_REQUEST["search"];
+  $apireturn["request"]["offset"] = $_REQUEST["offset"];
+
+  if ($_REQUEST["search"])
+  {
+    $_REQUEST["originalsearch"] = $_REQUEST["search"];
+    $_REQUEST["search"] = preg_replace ('(\b[^\d\W]+\b)', '$0*', preg_replace ('/(\s+)/', ' +', trim ($_REQUEST["search"])));
+
+    if (strlen ($_REQUEST["search"]) > 3)
+    {
+      $goquery = true;
+      $match = "match (summary) against ('+". $_REQUEST["search"]. "'";
+      $fullmatch = $match. ")";
+      $wherematch = "{$match} IN BOOLEAN MODE)";
+      $relevancematch = str_replace ("summary", "worksummary", $wherematch);
+      $composermatch = str_replace ("summary", "composersummary", $wherematch);
+    }
+    else
+    {
+      $goquery = false;
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"Too short search term");
+    }
+  }
+
+  if ($goquery)
+  {
+    // listing results
+
+    $sql = "select GROUP_CONCAT(concat(recording_performer.performer,'//',coalesce(recording_performer.role,'')) SEPARATOR '||') as performers, concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.verified, recording.compilation, recording.spotify_albumid, recording.work_id as work, recording.composer_name, recording.work_title, spotify_imgurl as cover, min(if ({$relevancematch} > 0, 1, 0)) as relevance, min({$composermatch}) as composerrelevance from recording, recording_performer, omnisearch where omnisearch.work_id = recording.work_id and omnisearch.spotify_albumid = recording.spotify_albumid and omnisearch.subset = recording.subset and {$wherematch} and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid group by recording.work_id, recording.spotify_albumid, recording.subset order by composerrelevance desc, relevance desc, min(plays) desc, min(omnisearch.popular) desc, min(omnisearch.recommended) desc, work asc, recording.spotify_albumid asc, recording.subset asc limit 25 offset {$_REQUEST["offset"]}";
+    $recordings = mysqlfetch ($mysql, $sql);
+
+    if (!$recordings)
+    {
+      // if no results, return an error
+
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"Nothing found");
+    }
+    else
+    {
+      // there are results, go list'em
+
+      $apireturn["status"] = Array ("success"=>"true", "source"=>"db");
+
+      // open opus api call
+
+      foreach ($recordings as $rec)
+      {
+        if (!stristr ($rec["work"], "at*")) $worklist[] = $rec["work"];
+      }
+
+      $obworks = openopusdownparse ("work/list/ids/". implode (",", array_unique ($worklist)). ".json");
+
+      foreach ($recordings as $rec)
+      {
+        $apireturn["recordings"][$rec["id"]] = Array
+          (
+            "spotify_albumid" => $rec["spotify_albumid"],
+            "set" => (Int) $rec["subset"],
+            "cover" => $rec["cover"],
+            "observation" => $rec["observation"],
+            "compilation" => ($rec["compilation"] ? "true" : (any_string (COMPILATION_PERFORMERS, $rec["performers"]) ? "true" : "false")),
+            "verified" => $rec["verified"],
+            "relevance" => $rec["relevance"],
+          );
+
+        foreach (explode ("||", $rec["performers"]) as $perf)
+        {
+          $apireturn["recordings"][$rec["id"]]["performers"][] = Array ("name"=>explode ("//", $perf)[0],"role"=>explode ("//", $perf)[1]);
+        }
+        
+        if ($rec["composer_name"])
+        {
+          $apireturn["recordings"][$rec["id"]]["work"] = Array
+          (
+            "composer"=>Array
+              (
+                "id"=>"0",
+                "name"=>$rec["composer_name"],
+                "complete_name"=>$rec["composer_name"],
+                "epoch"=>"None"
+              ),
+            "id"=>$rec["work"],
+            "title"=>$rec["work_title"],
+            "genre"=>"None"
+          );
+        }
+        else
+        {
+          $apireturn["recordings"][$rec["id"]]["work"] = Array
+          (
+            "composer"=>Array
+              (
+                "id"=>$obworks["works"]["w:". $rec["work"]]["composer"]["id"],
+                "name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["name"],
+                "complete_name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["complete_name"],
+                "epoch"=>$obworks["works"]["w:". $rec["work"]]["composer"]["epoch"]
+              ),
+            "id"=>$rec["work"],
+            "title"=>$obworks["works"]["w:". $rec["work"]]["title"],
+            "genre"=>$obworks["works"]["w:". $rec["work"]]["genre"]
+          );
+        }
+      }
+
+      // performers
+
+      $apirecordings = $apireturn["recordings"];
+
+      foreach ($apirecordings as $apid => $apirec)
+      {
+        $apirecordings[$apid]["performers"] = orderperformers ($apirec["performers"]);
+        $apirecordings[$apid]["recording_id"] = "wkid-". $apirec["work"]["id"]. "-". $apirec["spotify_albumid"] . "-". slug(implode ("-", arraykeepvalues ($apirecordings[$apid]["performers"], ["name"])));
+      }
+
+      $apireturn["recordings"] = array_values ($apirecordings);
+
+      // checks spotify if recordings are available in the storefront
+
+      /*
+      if ($_REQUEST["country"])
+      {
+        foreach ($apireturn["recordings"] as $recs)
+        {
+            $plids[] = $recs["spotify_albumid"];
+        }
+
+        $albids = implode (",", $plids);
+        $chkalbs = spotifydownparse (SPOTIFYAPI. "/catalog/{$_REQUEST["country"]}/albums?ids={$albids}", APPMUSTOKEN);
+
+        foreach ($chkalbs["data"] as $albchk)
+        {
+            $albschkd[] = $albchk["id"];
+        }
+
+        foreach ($apireturn["recordings"] as $recss)
+        {
+          if (in_array ($recss["spotify_albumid"], $albschkd))
+          {
+            $apireturn["valid-recordings"][] = $recss;
+          }
+        }
+
+        $apireturn["recordings"] = $apireturn["valid-recordings"];
+        unset ($apireturn["valid-recordings"]);
+      }
+      */
+
+      // composers and works search
+
+      if (!$_REQUEST["offset"])
+      {
+        $omniopus = openopusdownparse ("omnisearch/". urlencode ($_REQUEST["originalsearch"]). "/0.json");
+
+        foreach ($omniopus["results"] as $oors)
+        {
+          if (isset ($oors["work"]))
+          {
+            $worksdb["w:". $oors["work"]["id"]] = $oors["work"];
+            $worksdb["w:". $oors["work"]["id"]]["composer"] = $oors["composer"];
+            $worksids[] = $oors["work"]["id"];
+          }
+          else
+          {
+            $apireturn["composers"][$oors["composer"]["id"]] = $oors["composer"];
+          }
+        }
+  
+        // ordering works by popularity
+  
+        if (sizeof ($worksids) > 1)
+        {
+          $sql = "select sum(plays) pl, work_id from omnisearch where work_id in (". implode (",", $worksids). ") group by work_id order by pl desc limit 5";
+          $ranking = mysqlfetch ($mysql, $sql);
+    
+          foreach ($ranking as $rk)
+          {
+            $apireturn["works"]["w:". $rk["work_id"]] = $worksdb["w:". $rk["work_id"]];
+          }
+  
+          foreach ($worksdb as $wk)
+          {
+            $apireturn["works"]["w:". $wk["id"]] = $wk;
+          }
+        }
+        else
+        {
+          $apireturn["works"] = $worksdb;
+        }
+  
+        // is there any dominant composer or work?
+  
+        if ($obworks["abstract"]["composers"]["rows"] == 1)
+        {
+          $wrk = array_values ($obworks["works"])[0];
+          $apireturn["composers"][$wrk["composer"]["id"]] = $wrk["composer"];
+  
+          if ($obworks["abstract"]["works"]["rows"] == 1)
+          {
+            $apireturn["works"]["w:". $wrk["id"]] = $wrk;
+          }
+        }
+      }
+
+      // putting everything together
+
+      $apireturn["status"]["rows"] = sizeof ($recordings);
+
+      if (!$_REQUEST["offset"])
+      {
+        $apireturn["composers"] = array_values ($apireturn["composers"]);
+        $apireturn["works"] = array_slice (array_values ($apireturn["works"]), 0, 5);
+      }
+
+      if (sizeof ($recordings) == 25)
+      {
+          $apireturn["next"] = $_REQUEST["offset"] + 25;
+      }
+    }
+  }
+
+  echo savecache ("/omnisearch/{$_REQUEST["country"]}/{$_REQUEST["originalsearch"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
