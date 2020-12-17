@@ -411,7 +411,7 @@
           $rreturn[] = Array
             (
               "spotify_albumid" => $spotify_albumid,
-              "set" => $track["id"],
+              "set" => (String) $track["id"],
               "verified" => "false",
               "cover" => $albums["cover"],
               "performers" => $track["performers"],
@@ -448,7 +448,7 @@
         
         $newreturn[$newkey] = $album;
         $newreturn[$newkey]["performers"] = $fullperformers;
-        $newreturn[$newkey]["set"] = $track["id"];
+        $newreturn[$newkey]["set"] = (String) $track["id"];
         $newreturn[$newkey]["recording_id"] = $newkey;
         unset ($newreturn[$newkey]["tracks"]);
       }
@@ -565,7 +565,7 @@
 
       foreach ($performers as $pk => $pf)
       {
-        $nperfs[] = Array ("performer"=>$pf["name"], "role"=>$pf["role"], "work_id"=>$request["wid"], "spotify_albumid"=>$request["aid"], "subset"=>$request["set"]);
+        $nperfs[] = Array ("performer"=>$pf["name"], "role"=>$pf["role"], "work_id"=>$request["wid"], "spotify_albumid"=>$request["aid"], "subset"=>(String) $request["set"]);
       }
 
       mysqlmultinsert ($mysql, "recording_performer", $nperfs);

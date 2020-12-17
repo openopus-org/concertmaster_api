@@ -59,7 +59,7 @@
         $apireturn["recordings"][$rec["id"]] = Array
           (
             "spotify_albumid" => $rec["spotify_albumid"],
-            "set" => (Int) $rec["subset"],
+            "set" => (String) $rec["subset"],
             "cover" => $rec["cover"],
             "observation" => $rec["observation"],
             "compilation" => ($rec["compilation"] ? "true" : (any_string (COMPILATION_PERFORMERS, $rec["performers"]) ? "true" : "false")),

@@ -30,7 +30,7 @@
     (
       "work_id" => $_REQUEST["wid"],
       "spotify_albumid" => $_REQUEST["aid"],
-      "subset" => $_REQUEST["set"]
+      "subset" => (String) $_REQUEST["set"]
     );
 
     if ($_REQUEST["observation"]) $update["observation"] = $_REQUEST["observationvalue"];
@@ -55,7 +55,7 @@
         }
         else
         {
-          $inss[] = array_merge (["work_id" => $_REQUEST["wid"], "spotify_albumid" => $_REQUEST["aid"], "subset" => $_REQUEST["set"]], $inperformers);
+          $inss[] = array_merge (["work_id" => $_REQUEST["wid"], "spotify_albumid" => $_REQUEST["aid"], "subset" => (String) $_REQUEST["set"]], $inperformers);
         }
       }
 
@@ -66,7 +66,7 @@
 
         foreach ($performerstoguess as $pftog)
         {
-          $inss[] = ["work_id" => $_REQUEST["wid"], "spotify_albumid" => $_REQUEST["aid"], "subset" => $_REQUEST["set"], "performer" => $pftog, "role" => $rldb[slug ($pftog)]];
+          $inss[] = ["work_id" => $_REQUEST["wid"], "spotify_albumid" => $_REQUEST["aid"], "subset" => (String) $_REQUEST["set"], "performer" => $pftog, "role" => $rldb[slug ($pftog)]];
         }
       }
 
@@ -93,7 +93,7 @@
 
     $apireturn["status"]["success"] = "true";
     $apireturn["work"]["id"] = $_REQUEST["wid"];
-    $apireturn["recording"] = ["spotify_albumid" => $_REQUEST["aid"], "subset" => $_REQUEST["set"]];
+    $apireturn["recording"] = ["spotify_albumid" => $_REQUEST["aid"], "subset" => (String) $_REQUEST["set"]];
     if ($_REQUEST["observation"]) $apireturn["recording"]["observation"] = $_REQUEST["observationvalue"];
     if ($_REQUEST["performers"]) $apireturn["recording"]["performers"] = arrayrenamekey (arraykeep ($inss, ["performer", "role"]), "performer", "name");
     if ($_REQUEST["tracks"]) $apireturn["recording"]["tracks"] = $intracks;      

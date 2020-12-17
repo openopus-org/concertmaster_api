@@ -25,7 +25,7 @@
     else
     {
         $apireturn["status"]["success"] = "true";
-        $apireturn["recording"] = Array ("work_id"=>$id[0]["work_id"], "spotify_albumid"=>$id[0]["spotify_albumid"], "set"=>$id[0]["subset"], "id" => $_REQUEST["rid"]);
+        $apireturn["recording"] = Array ("work_id"=>$id[0]["work_id"], "spotify_albumid"=>$id[0]["spotify_albumid"], "set"=>(String) $id[0]["subset"], "id" => $_REQUEST["rid"]);
     }
   }
 

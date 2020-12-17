@@ -32,7 +32,7 @@
         $apireturn["recordings"][$id] = Array
           (
             "spotify_albumid" => $rec["spotify_albumid"],
-            "set" => $rec["subset"],
+            "set" => (String) $rec["subset"],
             "cover" => $rec["cover"],
             "observation" => $rec["observation"]
           );

@@ -69,7 +69,7 @@
 
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["playlist"] = ["id"=>$_REQUEST["pid"], "name"=>$_REQUEST["name"]];
-      $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>$_REQUEST["set"]);
+      $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>(String) $_REQUEST["set"]);
       $apireturn["list"] = playlists ($_REQUEST["id"]);
   }
 

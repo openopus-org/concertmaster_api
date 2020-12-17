@@ -31,7 +31,7 @@
     }
 
     $apireturn["status"]["success"] = "true";
-    $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>$_REQUEST["set"], "id" => strval ($retid), "operation" => $status);
+    $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>(String) $_REQUEST["set"], "id" => strval ($retid), "operation" => $status);
   }
 
   echo savecache ("/recording/shorturl/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json", apireturn ($apireturn));
