@@ -257,6 +257,8 @@
     return Array ("type"=> $return, "items"=>${$return}, "stats"=>$stats, "extras"=>$extras);
   }
 
+  // free search on the spotify catalogue
+
   function searchspotify ($search, $offset = 0, $market = "")
   {
     // fetching spotify api
@@ -457,6 +459,254 @@
     $rreturn = $newreturn;
 
     return ["recordings" => $rreturn, "next" => $amres["tracks"]["next"]];
+  }
+
+  // fetch album details from spotify
+
+  function albumspotify ($spotify_albumid, $market = "")
+  {
+    $spturl = SPOTIFYAPI. "/albums/". $work["recording"]["spotify_albumid"]. "/?limit=". SAPI_ITEMS;
+    if ($market) $spturl .= "&market={$market}";
+
+    $spalbums = spotifydownparse ($spturl, $token);
+    
+    $extras = Array 
+      (
+        "title" => $spalbums["data"][0]["attributes"]["name"],
+        "label" => $spalbums["data"][0]["attributes"]["recordLabel"],
+        "cover" => str_replace ("{w}x{h}", "320x320", $spalbums["data"][0]["attributes"]["artwork"]["url"]),
+        "year" => $spalbums["data"][0]["attributes"]["releaseDate"]
+      );
+
+    while ($spalbums["data"][0]["relationships"]["tracks"]["next"])
+    {
+      $moretracks = appledownparse (APPLEMUSICAPIBASE. $spalbums["data"][0]["relationships"]["tracks"]["next"], APPMUSTOKEN);
+
+      $spalbums["data"][0]["relationships"]["tracks"]["data"] = array_merge ($spalbums["data"][0]["relationships"]["tracks"]["data"], $moretracks["data"]);
+      $spalbums["data"][0]["relationships"]["tracks"]["next"] = $moretracks["data"]["next"];
+    }
+
+    $data = $spalbums["data"][0]["relationships"]["tracks"]["data"];
+
+    foreach ($data as $alb)
+    {
+      if (isset ($alb["attributes"]["workName"]))
+      {
+        $alb["attributes"]["workName"] = str_replace ($alb["attributes"]["composerName"]. ":", "", $alb["attributes"]["workName"]);
+        $alb["attributes"]["workName"] = str_replace (end (explode (" ", $alb["attributes"]["composerName"])). ":", "", $alb["attributes"]["workName"]);
+
+        preg_match_all (CATALOGUE_REGEX, $alb["attributes"]["workName"], $matches);
+        $catalogue = trim(end($matches[2]));
+
+        $work_title = explode(":", str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["attributes"]["workName"]))[0];
+        $work_title = str_replace (str_replace (":", " ", $catalogue), $catalogue, $work_title);
+      }
+      else
+      {
+        $alb["attributes"]["name"] = str_replace ($alb["attributes"]["composerName"]. ":", "", $alb["attributes"]["name"]);
+        $alb["attributes"]["name"] = str_replace (end (explode (" ", $alb["attributes"]["composerName"])). ":", "", $alb["attributes"]["name"]);
+        
+        preg_match_all (CATALOGUE_REGEX, $alb["attributes"]["name"], $matches);
+        $catalogue = trim(end($matches[2]));
+
+        $work_title = explode(":", str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["attributes"]["name"]))[0];
+        $work_title = str_replace (str_replace (":", " ", $catalogue), $catalogue, $work_title);
+      }
+
+      preg_match ('/(\(.*?\))/i', $alb["attributes"]["name"], $matches);
+
+      if (sizeof ($matches) > 0)
+      {
+        $subtitle = $matches[sizeof ($matches)-1];
+        $work_title = str_replace ($subtitle, "", $work_title);
+      }
+
+      unset ($performers);
+      $alb["artists"] = preg_split("/(\,|\&)/", $alb["attributes"]["artistName"]);
+      foreach ($alb["artists"] as $kart => $art)
+      {
+        if (!strpos ($art["name"], "/"))
+        {
+          $performers[] = trim ($art);
+        }
+      }
+
+      $trackey = trim (preg_split("/(\,|\&)/", $alb["attributes"]["composerName"])[0]). " | ". workslug ($work_title);
+      $tracknumber = ($alb["attributes"]["discNumber"] * 1000) + $alb["attributes"]["trackNumber"];
+
+      if (end ($trackindex)["value"] == $trackey)
+      {
+        $trackarrkey = end ($trackindex)["key"]. "-". $trackey;
+        $trackindex[$tracknumber] = ["key" => end ($trackindex)["key"], "value" => $trackey];
+      }
+      else
+      {
+        $trackarrkey = $tracknumber. "-". $trackey;
+        $trackindex[$tracknumber] = ["key" => $tracknumber, "value" => $trackey];
+      }
+
+      if (stristr ($catalogue, ":"))
+      {
+        $alb["attributes"]["name"] = str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["attributes"]["name"]);
+      }
+
+      $tracks[$trackarrkey][] = Array (
+        "composer" => ($alb["attributes"]["composerName"] ? $alb["attributes"]["composerName"] : "None"),
+        "work" => trim ($work_title),
+        "full_title" => $alb["attributes"]["name"],
+        "title" => trim (str_replace ("(Live)", "", end (explode (":", end (explode ("/", preg_replace ('/((\[|\().*(\]|\)))/U', '', $alb["attributes"]["name"]))))))),
+        "cd" => $alb["attributes"]["discNumber"],
+        "position" => $alb["attributes"]["trackNumber"],
+        "length" => round ($alb["attributes"]["durationInMillis"] / 1000, 0, PHP_ROUND_HALF_UP),
+        "apple_trackid" => $alb["id"],
+        "preview" => $alb["attributes"]["previews"][0]["url"],
+        "performers" => $performers
+      );
+
+      $works[] = ["composer" => $alb["attributes"]["composerName"], "title" => trim ($work_title)];
+    }
+
+    //print_r ($trackindex);
+    //print_r ($tracks);
+
+    // guessing composer and works
+
+    $guessedworks = openopusdownparse ("dyn/work/guess/", ["works"=>json_encode ($works)]);
+
+    foreach ($guessedworks["works"] as $gwork)
+    {
+      $worksdb[str_replace ("-", "", slug ($gwork["requested"]["composer"])). "-". str_replace ("-", "", workslug ($gwork["requested"]["title"]))] = $gwork["guessed"];  
+    }
+
+    foreach ($guessedworks["composers"] as $gcmp)
+    {
+      $compsdb[str_replace ("-", "", slug ($gcmp["requested"]))] = $gcmp["guessed"];
+    }
+
+    //print_r ($worksdb);
+    //print_r ($tracks);
+    
+    // compiling album array
+
+    $allperformers = Array ();
+
+    foreach ($tracks as $ktr => $tr)
+    {
+      $comp = str_replace ("-", "", slug ($tr[0]["composer"]));
+      $wk = str_replace ("-", "", workslug ($tr[0]["work"]));
+
+      if (isset ($worksdb[$comp. "-". $wk]))
+      {
+        $rwdb = $worksdb[$comp. "-". $wk];
+        $rwork = Array 
+          (
+            "id" => $rwdb["id"],
+            "genre" => $rwdb["genre"],
+            "title" => $rwdb["title"],
+            "subtitle" => $rwdb["subtitle"],
+            "composer" => Array 
+              (
+                "id" => $rwdb["composer"]["id"],
+                "name" => $rwdb["composer"]["name"],
+                "complete_name" => $rwdb["composer"]["complete_name"],
+                "epoch" => $rwdb["composer"]["epoch"]
+              )
+          );
+      }
+      else 
+      {
+        $rwork = [
+          "id" => "at*{$tr[0]["apple_trackid"]}", 
+          "title" => $tr[0]["work"], 
+          "genre"=>"None"];
+
+        if (isset ($compsdb[$comp]))
+        {
+          $rwdbc = $compsdb[$comp];
+          $rwork["composer"] = Array 
+            (
+              "id" => $rwdbc["id"],
+              "name" => $rwdbc["name"],
+              "complete_name" => $rwdbc["complete_name"],
+              "epoch" => $rwdbc["epoch"]
+            );
+        }
+        else
+        {
+          $rwork["composer"] = [
+            "complete_name" => $tr[0]["composer"],
+            "id" => "0",
+            "name" => $tr[0]["composer"],
+            "epoch" => "None"]; 
+        }
+      }
+
+      $return[$ktr] = Array (
+        "work" => $rwork,
+        "performers" => $tr[0]["performers"]
+      );
+
+      foreach ($tr as $track)
+      {
+        $return[$ktr]["tracks"][] = Array (
+          "title" => $track["title"],
+          "full_title" => $track["full_title"],
+          "cd" => $track["cd"],
+          "position" => $track["position"],
+          "length" => $track["length"],
+          "apple_trackid" => $track["apple_trackid"],
+          "preview" => $track["preview"],
+          "performers" => $track["performers"]
+        );
+
+        $allperformers = array_merge ($allperformers, $track["performers"]);
+      }
+    }
+
+    //print_r ($return);
+
+    // detecting multiple recordings of a same work
+
+    $perfsdb = openopusdownparse ("dyn/performer/list/", ["names"=>json_encode ($allperformers)]);
+
+    foreach ($return as $workkeys => $work)
+    {
+      foreach ($work["tracks"] as $track)
+      {
+        $fullperformers = allperformers ($track["performers"], $perfsdb["performers"]["digest"], $work["work"]["composer"]["complete_name"]);
+        
+        if (sizeof ($track["performers"]) <= 5 || arrayitems (["Orchestra", "Conductor"], "role", $fullperformers))
+        {
+          $performers = array_slice ($fullperformers, -2, 2, true);
+        }
+        else
+        {
+          $performers = [["name" => "Several", "role" => "Several"]];
+        }
+        
+        $newkey = $workkeys. "-". slug(implode ("-", arraykeepvalues ($performers, ["name"])));
+
+        if (array_key_exists ($newkey, $newreturn))
+        {
+          $newreturn[$newkey]["tracks"][] = $track;
+        }
+        else
+        {
+          $newreturn[$newkey] = ["work" => $work["work"], "performers" => $fullperformers, "tracks" => [$track], "recording_id" => "wkid-". $work["work"]["id"]. "-". $apple_albumid . "-". slug(implode ("-", arraykeepvalues ($performers, ["name"]))). "-". explode ("-", $workkeys)[0]];          
+        }
+      }
+    }
+
+    $return = $newreturn;
+
+    $stats = Array 
+      (
+        "apple_responses" => count ($data),
+        "useful_responses" => count ($data),
+        "usefulness_rate" => "100%"
+      );
+
+    return Array ("type"=> "tracks", "items"=>array_values ($return), "stats"=>$stats, "extras"=>$extras);
   }
 
   // add concertmaster own extradata to spotify metadata

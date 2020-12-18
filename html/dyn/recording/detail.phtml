@@ -2,40 +2,93 @@
   include_once ("../../../lib/inc.php");
   global $timesteps;
 
-  // try to find the work
+  $goquery = true;
 
-  $work = openopusdownparse ("work/detail/{$_REQUEST["wid"]}.json");
-  
-  if (!$work)
+  // new compatible sets
+
+  $_REQUEST["originalset"] = $_REQUEST["set"];
+
+  if ($_REQUEST["set"] != "1")
   {
-    // if work doesn't exist, return an error
-
-    $apireturn["status"] = Array ("success"=>"false", "error"=>"Work not found");
+    $_REQUEST["wid"] = "at*". $_REQUEST["set"];
+    $_REQUEST["set"] = 1;
   }
-  else
+
+  if (stristr ($_REQUEST["wid"], "at*"))
   {
-    // work exists
+    // spotify work
 
-    $work["recording"]["spotify_albumid"] = $_REQUEST["aid"];
+    $goquery = true;
+    $work_spotid = str_replace ("at*", "", $_REQUEST["wid"]);
+    $apireturn["status"] = Array ("success"=>"true", "source"=>"ext", "market"=>$_REQUEST["market"]);
 
-    $apireturn["work"] = $work["work"];
-    $apireturn["work"]["composer"] = $work["composer"];
+    // fetching album and looking for the track
+    
+    $spot = albumspotify ($_REQUEST["aid"], $_REQUEST["country"]);
+
+    foreach ($spot["items"] as $recording)
+    {
+      foreach ($recording["tracks"] as $track)
+      {
+        if ($track["spotify_trackid"] == $work_spotid)
+        {
+          $apireturn["work"] = $recording["work"];
+          $spot["items"] = $recording["tracks"];
+        }
+      }
+    }
+
+    //$apireturn["work"] = ["id" => $_REQUEST["wid"], "title" => $spot["extras"]["work"]["title"], "subtitle" => $spot["extras"]["work"]["subtitle"], "composer" => $spot["extras"]["composer"], "genre"=>"None"];
     
     $apireturn["recording"] = Array
       (
-         "spotify_albumid"=>$_REQUEST["aid"],
-         "spotify_tracks"=>Array (),
-         "performers"=>Array (),
-         "tracks"=>Array (),
+        "spotify_albumid"=>$_REQUEST["aid"],
+        "spotify_tracks"=>Array (),
+        "performers"=>Array (),
+        "tracks"=>Array (),
       );
+  }
+  else
+  {
+    // open opus work
 
-    // fetching data from spotify
+    $work = openopusdownparse ("work/detail/{$_REQUEST["wid"]}.json");
+    
+    if (!$work)
+    {
+      // if work doesn't exist, return an error
 
-    $apireturn["recording"]["length"] = 0;
-    $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"Work not found");
+      $goquery = false;
+    }
+    else
+    {
+      // work exists
 
-    $spot = fetchspotify ($work, "tracks", $_REQUEST["market"]);
+      $work["recording"]["spotify_albumid"] = $_REQUEST["aid"];
 
+      $apireturn["work"] = $work["work"];
+      $apireturn["work"]["composer"] = $work["composer"];
+      
+      $apireturn["recording"] = Array
+        (
+          "spotify_albumid"=>$_REQUEST["aid"],
+          "spotify_tracks"=>Array (),
+          "performers"=>Array (),
+          "tracks"=>Array (),
+        );
+
+      // fetching data from spotify
+
+      $apireturn["recording"]["length"] = 0;
+      $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
+
+      $spot = fetchspotify ($work, "tracks", $_REQUEST["market"]);
+    }
+  }
+
+  if ($goquery)
+  {
     // guessing the performers
 
     $perfs = openopusdownparse ("dyn/performer/list/", ["names"=>json_encode (end($spot["items"])["performers"])]);
