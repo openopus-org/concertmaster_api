@@ -187,7 +187,7 @@
           {
             if ($kart && !strpos ($art["name"], "/"))
             {
-              $performers[] = $art["name"];
+              $performers[] = trim ($art["name"]);
             }
           }
 
@@ -465,55 +465,69 @@
 
   function albumspotify ($spotify_albumid, $market = "")
   {
-    $spturl = SPOTIFYAPI. "/albums/". $work["recording"]["spotify_albumid"]. "/?limit=". SAPI_ITEMS;
+    $token = spotifyauth ();
+
+    $spturl = SPOTIFYAPI. "/albums/". $spotify_albumid. "/?limit=". SAPI_ITEMS;
     if ($market) $spturl .= "&market={$market}";
 
     $spalbums = spotifydownparse ($spturl, $token);
+
+    //print_r ($spalbums);
+    //return true;
+
+    if ($spalbums["release_date_precision"] == "day") 
+    {
+      $year = $spalbums["release_date"];
+    }
+    else if ($spalbums["release_date_precision"] == "month") 
+    {
+      $year = $spalbums["release_date"]. "-01";
+    }
+    else
+    {
+      $year = $spalbums["release_date"]. "-01-01";
+    }
     
     $extras = Array 
       (
-        "title" => $spalbums["data"][0]["attributes"]["name"],
-        "label" => $spalbums["data"][0]["attributes"]["recordLabel"],
-        "cover" => str_replace ("{w}x{h}", "320x320", $spalbums["data"][0]["attributes"]["artwork"]["url"]),
-        "year" => $spalbums["data"][0]["attributes"]["releaseDate"]
+        "title" => $spalbums["name"],
+        "label" => $spalbums["label"],
+        "cover" => $spalbums["images"][0]["url"],
+        "year" => $year,
+        "markets" => $spalbums["available_markets"]
       );
 
-    while ($spalbums["data"][0]["relationships"]["tracks"]["next"])
-    {
-      $moretracks = appledownparse (APPLEMUSICAPIBASE. $spalbums["data"][0]["relationships"]["tracks"]["next"], APPMUSTOKEN);
+    //print_r ([$spalbums, $spalbums["tracks"]["next"]]);
 
-      $spalbums["data"][0]["relationships"]["tracks"]["data"] = array_merge ($spalbums["data"][0]["relationships"]["tracks"]["data"], $moretracks["data"]);
-      $spalbums["data"][0]["relationships"]["tracks"]["next"] = $moretracks["data"]["next"];
+    while ($spalbums["tracks"]["next"])
+    {
+      $moretracks = spotifydownparse ($spalbums["tracks"]["next"], $token);
+
+      $spalbums["tracks"]["items"] = array_merge ($spalbums["tracks"]["items"], $moretracks["items"]);
+      $spalbums["tracks"]["next"] = $moretracks["next"];
     }
 
-    $data = $spalbums["data"][0]["relationships"]["tracks"]["data"];
+    $data = $spalbums["tracks"]["items"];
 
     foreach ($data as $alb)
     {
-      if (isset ($alb["attributes"]["workName"]))
+      $alb["name"] = str_replace (end (explode (" ", $alb["artists"][0]["name"])), "", str_replace (end (explode (" ", $alb["artists"][0]["name"])). ": ", "", str_replace ($alb["artists"][0]["name"], "", str_replace ($alb["artists"][0]["name"]. ": ", "", $alb["name"]))));
+      $alb["name"] = preg_replace ('/^(( )*( |\,|\(|\'|\"|\-|\;|\:)( )*)/i', '', $alb["name"], 1);
+
+      preg_match_all (CATALOGUE_REGEX, $alb["name"], $matches);
+      $catalogue = trim(end($matches[2]));
+
+      if ($catalogue)
       {
-        $alb["attributes"]["workName"] = str_replace ($alb["attributes"]["composerName"]. ":", "", $alb["attributes"]["workName"]);
-        $alb["attributes"]["workName"] = str_replace (end (explode (" ", $alb["attributes"]["composerName"])). ":", "", $alb["attributes"]["workName"]);
-
-        preg_match_all (CATALOGUE_REGEX, $alb["attributes"]["workName"], $matches);
-        $catalogue = trim(end($matches[2]));
-
-        $work_title = explode(":", str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["attributes"]["workName"]))[0];
-        $work_title = str_replace (str_replace (":", " ", $catalogue), $catalogue, $work_title);
+        $work_title = $matches[0][0];
       }
       else
       {
-        $alb["attributes"]["name"] = str_replace ($alb["attributes"]["composerName"]. ":", "", $alb["attributes"]["name"]);
-        $alb["attributes"]["name"] = str_replace (end (explode (" ", $alb["attributes"]["composerName"])). ":", "", $alb["attributes"]["name"]);
-        
-        preg_match_all (CATALOGUE_REGEX, $alb["attributes"]["name"], $matches);
-        $catalogue = trim(end($matches[2]));
-
-        $work_title = explode(":", str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["attributes"]["name"]))[0];
-        $work_title = str_replace (str_replace (":", " ", $catalogue), $catalogue, $work_title);
+        $work_title = explode(":", str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["name"]))[0];
+        $work_title = str_replace (str_replace (":", " ", $catalogue), $catalogue, $work_title);  
       }
-
-      preg_match ('/(\(.*?\))/i', $alb["attributes"]["name"], $matches);
+      
+      preg_match ('/(\(.*?\))/i', $alb["name"], $matches);
 
       if (sizeof ($matches) > 0)
       {
@@ -522,17 +536,17 @@
       }
 
       unset ($performers);
-      $alb["artists"] = preg_split("/(\,|\&)/", $alb["attributes"]["artistName"]);
+      
       foreach ($alb["artists"] as $kart => $art)
       {
-        if (!strpos ($art["name"], "/"))
+        if ($kart && !strpos ($art["name"], "/"))
         {
-          $performers[] = trim ($art);
+          $performers[] = trim ($art["name"]);
         }
       }
 
-      $trackey = trim (preg_split("/(\,|\&)/", $alb["attributes"]["composerName"])[0]). " | ". workslug ($work_title);
-      $tracknumber = ($alb["attributes"]["discNumber"] * 1000) + $alb["attributes"]["trackNumber"];
+      $trackey = trim (preg_split("/(\,|\&)/", $alb["artists"][0]["name"])[0]). " | ". workslug ($work_title);
+      $tracknumber = ($alb["disc_number"] * 1000) + $alb["track_number"];
 
       if (end ($trackindex)["value"] == $trackey)
       {
@@ -547,27 +561,24 @@
 
       if (stristr ($catalogue, ":"))
       {
-        $alb["attributes"]["name"] = str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["attributes"]["name"]);
+        $alb["name"] = str_replace ($catalogue, str_replace (":", " ", $catalogue), $alb["name"]);
       }
 
       $tracks[$trackarrkey][] = Array (
-        "composer" => ($alb["attributes"]["composerName"] ? $alb["attributes"]["composerName"] : "None"),
+        "composer" => ($alb["artists"][0]["name"] ? $alb["artists"][0]["name"] : "None"),
         "work" => trim ($work_title),
-        "full_title" => $alb["attributes"]["name"],
-        "title" => trim (str_replace ("(Live)", "", end (explode (":", end (explode ("/", preg_replace ('/((\[|\().*(\]|\)))/U', '', $alb["attributes"]["name"]))))))),
-        "cd" => $alb["attributes"]["discNumber"],
-        "position" => $alb["attributes"]["trackNumber"],
-        "length" => round ($alb["attributes"]["durationInMillis"] / 1000, 0, PHP_ROUND_HALF_UP),
-        "apple_trackid" => $alb["id"],
-        "preview" => $alb["attributes"]["previews"][0]["url"],
+        "full_title" => $alb["name"],
+        "title" => trim (str_replace ("(Live)", "", end (explode (":", end (explode ("/", preg_replace ('/((\[|\().*(\]|\)))/U', '', $alb["name"]))))))),
+        "cd" => $alb["disc_number"],
+        "position" => $alb["track_number"],
+        "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
+        "spotify_trackid" => $alb["id"],
+        "preview" => $alb["preview_url"],
         "performers" => $performers
       );
 
-      $works[] = ["composer" => $alb["attributes"]["composerName"], "title" => trim ($work_title)];
+      $works[] = ["composer" => $alb["artists"][0]["name"], "title" => trim ($work_title)];
     }
-
-    //print_r ($trackindex);
-    //print_r ($tracks);
 
     // guessing composer and works
 
@@ -616,7 +627,7 @@
       else 
       {
         $rwork = [
-          "id" => "at*{$tr[0]["apple_trackid"]}", 
+          "id" => "at*{$tr[0]["spotify_trackid"]}", 
           "title" => $tr[0]["work"], 
           "genre"=>"None"];
 
@@ -654,7 +665,7 @@
           "cd" => $track["cd"],
           "position" => $track["position"],
           "length" => $track["length"],
-          "apple_trackid" => $track["apple_trackid"],
+          "spotify_trackid" => $track["spotify_trackid"],
           "preview" => $track["preview"],
           "performers" => $track["performers"]
         );
@@ -692,7 +703,7 @@
         }
         else
         {
-          $newreturn[$newkey] = ["work" => $work["work"], "performers" => $fullperformers, "tracks" => [$track], "recording_id" => "wkid-". $work["work"]["id"]. "-". $apple_albumid . "-". slug(implode ("-", arraykeepvalues ($performers, ["name"]))). "-". explode ("-", $workkeys)[0]];          
+          $newreturn[$newkey] = ["work" => $work["work"], "performers" => $fullperformers, "tracks" => [$track], "recording_id" => "wkid-". $work["work"]["id"]. "-". $spotify_albumid . "-". slug(implode ("-", arraykeepvalues ($performers, ["name"]))). "-". explode ("-", $workkeys)[0]];          
         }
       }
     }
@@ -701,7 +712,7 @@
 
     $stats = Array 
       (
-        "apple_responses" => count ($data),
+        "spotify_responses" => count ($data),
         "useful_responses" => count ($data),
         "usefulness_rate" => "100%"
       );

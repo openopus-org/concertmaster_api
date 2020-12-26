@@ -26,6 +26,9 @@
     
     $spot = albumspotify ($_REQUEST["aid"], $_REQUEST["country"]);
 
+    //print_r ([$work_spotid, $spot]);
+    //end;
+
     foreach ($spot["items"] as $recording)
     {
       foreach ($recording["tracks"] as $track)

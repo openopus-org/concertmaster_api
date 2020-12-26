@@ -1,0 +1,101 @@
+<?
+    include_once ("../../../lib/inc.php");
+    global $timesteps;
+
+    if (!$_REQUEST["aid"])
+    {
+        $apireturn["status"] = Array ("success"=>"false", "error"=>"Missing parameteres");
+        $goquery = false;
+    }
+    else
+    {
+        // fetching data from spotify
+
+        $apireturn["status"] = Array ("success"=>"true", "source"=>"ext", "market"=>$_REQUEST["market"]);
+        $spot = albumspotify ($_REQUEST["aid"], $_REQUEST["market"]);
+
+        $apireturn["album"] = Array 
+            (
+                "spotify_albumid" => $_REQUEST["aid"],
+                "title" => $spot["extras"]["title"],
+                "cover" => $spot["extras"]["cover"],
+                "year" => explode ("-", $spot["extras"]["year"])[0],
+                "label" => $spot["extras"]["label"],
+                "length" => 0
+            );
+    }
+
+    foreach ($spot["items"] as $spotres)
+    {
+        $rec = Array
+        (
+            "spotify_albumid"=>$_REQUEST["aid"],
+            "spotify_tracks"=>Array (),
+            "performers"=>Array (),
+            "tracks"=>Array (),
+        );
+
+        // guessing the performers
+
+        //$perfs = openopusdownparse ("dyn/performer/list/", ["names"=>json_encode ($spotres["performers"])]);
+        //$rldb = $perfs["performers"]["digest"];
+        $index = 0;
+        
+        foreach ($spotres["tracks"] as $tart)
+        {
+            $trinsert[] = Array
+            (
+                "cd" => $tart["cd"],
+                "index" => $index++,
+                "position" => $tart["position"],
+                "length" => $tart["length"],
+                "title" => $tart["title"],
+                "spotify_trackid" => $tart["spotify_trackid"],
+                "preview" => $tart["preview"]
+            );
+
+            $rec["tracks"][] = end ($trinsert);
+            $rec["length"] += end($trinsert)["length"];
+            $apireturn["album"]["length"] += end($trinsert)["length"];
+        }
+
+        $rec["verified"] = $spot["extras"]["verified"] ? "true" : "false";
+        $rec["cover"] = $spot["extras"]["cover"];
+        $rec["set"] = (Int) $spotres["tracks"][0]["spotify_trackid"];
+        $rec["year"] = explode ("-", $spot["extras"]["year"])[0];
+        $rec["label"] = $spot["extras"]["label"];
+        $rec["performers"] = $spotres["performers"];
+        $rec["recording_id"] = $spotres["recording_id"];
+        //$rec["performers"] = allperformers ($spotres["performers"], $rldb, $spotres["work"]["composer"]["complete_name"]);
+
+        // setting auxiliary trackset & setting tracks starting points
+
+        if (isset ($rec["tracks"]) && $rec["spotify_albumid"])
+        {
+            $acctiming = 0;
+
+            foreach ($rec["tracks"] as $trid => $track)
+            {
+                $rec["tracks"][$trid]["starting_point"] = $acctiming;
+                $acctiming += $track["length"];
+                $apireturn["album"]["spotify_tracks"][] = $rec["tracks"][$trid]["spotify_trackid"];
+                $rec["spotify_tracks"][] = $rec["tracks"][$trid]["spotify_trackid"];
+                $apireturn["album"]["previews"][] = $rec["tracks"][$trid]["preview"];
+                $rec["previews"][] = $rec["tracks"][$trid]["preview"];
+            }
+        }
+
+        $apireturn["recordings"][] = Array (
+            "work" => $spotres["work"],
+            "recording" => $rec
+        );
+    }
+
+    if ($_REQUEST["market"])
+    {
+        echo savecache ("/album/{$_REQUEST["market"]}/detail/{$_REQUEST["aid"]}.json", apireturn ($apireturn));
+    }
+    else 
+    {
+        echo savecache ("/album/detail/{$_REQUEST["aid"]}.json", apireturn ($apireturn));
+    }
