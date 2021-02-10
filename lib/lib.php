@@ -513,8 +513,10 @@
     {
       $alb["name"] = str_replace (end (explode (" ", $alb["artists"][0]["name"])), "", str_replace (end (explode (" ", $alb["artists"][0]["name"])). ": ", "", str_replace ($alb["artists"][0]["name"], "", str_replace ($alb["artists"][0]["name"]. ": ", "", $alb["name"]))));
       $alb["name"] = preg_replace ('/^(( )*( |\,|\(|\'|\"|\-|\;|\:)( )*)/i', '', $alb["name"], 1);
+      
+      $alb["work_name"] = (explode (":", $alb["name"]))[0];
 
-      preg_match_all (CATALOGUE_REGEX, $alb["name"], $matches);
+      preg_match_all (CATALOGUE_REGEX, $alb["work_name"], $matches);
       $catalogue = trim(end($matches[2]));
 
       if ($catalogue)
