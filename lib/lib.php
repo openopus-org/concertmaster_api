@@ -571,6 +571,8 @@
         "work" => trim ($work_title),
         "full_title" => $alb["name"],
         "title" => trim (str_replace ("(Live)", "", end (explode (":", end (explode ("/", preg_replace ('/((\[|\().*(\]|\)))/U', '', $alb["name"]))))))),
+        "catalogue" => $catalogue ? 1 : 0,
+        "work_complete_title" => $alb["work_name"],
         "cd" => $alb["disc_number"],
         "position" => $alb["track_number"],
         "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
@@ -630,7 +632,7 @@
       {
         $rwork = [
           "id" => "at*{$tr[0]["spotify_trackid"]}", 
-          "title" => $tr[0]["work"], 
+          "title" => $tr[0]["catalogue"] ? $tr[0]["work_complete_title"] : $tr[0]["work"],
           "genre"=>"None"];
 
         if (isset ($compsdb[$comp]))
