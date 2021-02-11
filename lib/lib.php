@@ -259,12 +259,21 @@
 
   // free search on the spotify catalogue
 
-  function searchspotify ($search, $offset = 0, $market = "")
+  function searchspotify ($search, $offset = 0, $market = "", $classical = true)
   {
     // fetching spotify api
 
+    if ($classical)
+    {
+      $genre = " genre: classical";
+    }
+    else 
+    {
+      $genre = "";
+    }
+
     $token = spotifyauth ();
-    $spturl = SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=". trim(urlencode ($search. " genre:classical"));
+    $spturl = SPOTIFYAPI. "/search/?limit=". SAPI_ITEMS. "&type=track&offset={$offset}&q=". trim(urlencode ($search. $genre));
     if ($market) $spturl .= "&market={$market}";
 
     $amres = spotifydownparse ($spturl, $token);

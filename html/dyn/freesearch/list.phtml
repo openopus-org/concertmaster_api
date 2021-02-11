@@ -5,15 +5,9 @@
   $apireturn["request"]["search"] = $_REQUEST["search"];
   $apireturn["request"]["offset"] = $_REQUEST["offset"];
 
-  if ($_REQUEST["search"])
+  function filterresults ($spotfirstres)
   {
-    // fetching and analyzing spotify results
-
-    $spot = searchspotify ($_REQUEST["search"], $_REQUEST["offset"], $_REQUEST["market"]);
-
-    $spotfirstres = $spot["recordings"];
-
-    // filtering out the results
+    global $omnisearch_forbidden;
 
     $forbidden = implode ("|", $omnisearch_forbidden);
     $forbidden_regexp = '/\b('. $forbidden. ')\b/i';
@@ -45,8 +39,24 @@
       }
     }
 
-    $spotres = array_merge ($top_spotres, $mid_spotres, $bottom_spotres);
-    
+    return array_merge ($top_spotres, $mid_spotres, $bottom_spotres);
+  } 
+
+  if ($_REQUEST["search"])
+  {
+    // fetching and analyzing spotify results
+
+    $spot = searchspotify ($_REQUEST["search"], $_REQUEST["offset"], $_REQUEST["market"], true);
+    $spotres = filterresults ($spot["recordings"]);
+
+    // filtering out the results, doing again if zero
+
+    if (sizeof ($spotres) == 0)
+    {
+      $spot = searchspotify ($_REQUEST["search"], $_REQUEST["offset"], $_REQUEST["market"], false);
+      $spotres = filterresults ($spot["recordings"]);
+    }
+
     // adding the performers to the recording items
 
     foreach ($spotres as $k => $alb)
@@ -80,9 +90,9 @@
     $apireturn["status"] = Array ("success"=>"true", "source" => "ext", "rows"=>sizeof ($apireturn["recordings"]), "market"=>($_REQUEST["market"] ? $_REQUEST["market"] : ""));  
     $apireturn["status"]["stats"] = Array 
     (
-      "spotify_responses" => count ($spotfirstres),
+      "spotify_responses" => count ($spot["recordings"]),
       "useful_responses" => $apireturn["status"]["rows"],
-      "usefulness_rate" => round(100*($apireturn["status"]["rows"]/count ($spotfirstres)), 2). "%"
+      "usefulness_rate" => round(100*($apireturn["status"]["rows"]/count ($spot["recordings"])), 2). "%"
     );
 
     if ($spot["next"])
