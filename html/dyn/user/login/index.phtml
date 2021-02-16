@@ -35,7 +35,7 @@
       $apireturn["favoriterecordings"] = favrecordings ($tok["id"]);
       $apireturn["favorite"] = composerlist ("favorite", $tok["id"]);
       $apireturn["forbidden"] = composerlist ("forbidden", $tok["id"]);
-      $apireturn["playlists"] = playlists ($tok["id"]);
+      $apireturn["playlists"] = userplaylists ($tok["id"]);
     }
     else
     {
