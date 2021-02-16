@@ -27,6 +27,15 @@
 
       $apireturn["status"]["success"] = "true";
       $apireturn["user"] = Array ("product" => $tok["product"], "id" => $tok["id"], "name" => $tok["display_name"], "email" => $tok["email"], "country" => $tok["country"], "auth" => $auth);
+
+      // retrieving user's lists 
+
+      $apireturn["works"] = worklist ($tok["id"]);
+      $apireturn["composerworks"] = workcomposerlist ($tok["id"]);
+      $apireturn["favoriterecordings"] = favrecordings ($tok["id"]);
+      $apireturn["favorite"] = composerlist ("favorite", $tok["id"]);
+      $apireturn["forbidden"] = composerlist ("forbidden", $tok["id"]);
+      $apireturn["playlists"] = playlists ($tok["id"]);
     }
     else
     {

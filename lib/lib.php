@@ -847,3 +847,20 @@
 
     return true;
   }
+
+  // retrieving the favorite recording ids from a specified user
+
+  function favrecordings ($uid)
+  {
+    global $mysql;
+
+    $return = [];
+    $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id from recording, user_recording where user_recording.user_id = '{$uid}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and user_recording.favorite = 1");
+    
+    foreach ($recordings as $rec)
+    {
+      $return[] = $rec["id"];
+    }
+
+    return $return;
+  }
