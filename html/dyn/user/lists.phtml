@@ -13,7 +13,7 @@
       $apireturn["works"] = worklist ($_REQUEST["id"]);
       $apireturn["favorite"] = composerlist ("favorite", $_REQUEST["id"]);
       $apireturn["forbidden"] = composerlist ("forbidden", $_REQUEST["id"]);
-      $apireturn["playlists"] = playlists ($_REQUEST["id"]);
+      $apireturn["playlists"] = userplaylists ($_REQUEST["id"]);
       $apireturn["status"]["success"] = "true";
       $apireturn["user"]["id"] = $_REQUEST["id"];
   }
