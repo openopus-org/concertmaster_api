@@ -37,6 +37,8 @@
       $worklist[] = $rec["work"];
     }
 
+    $id = -1;
+
     $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
 
     foreach ($recordings as $rec)
@@ -73,6 +75,13 @@
     }
 
     $apirecordings = $apireturn["recordings"];
+
+    foreach ($apirecordings as $apid => $apirec)
+    {
+      $apirecordings[$apid]["performers"] = orderperformers ($apirec["performers"]);
+      $apirecordings[$apid]["recording_id"] = "wkid-". $apirec["work"]["id"]. "-". $apirec["apple_albumid"] . "-". slug(implode ("-", arraykeepvalues ($apirecordings[$apid]["performers"], ["name"])));
+    }
+    
     ksort ($apirecordings);
     $apireturn["recordings"] = array_values ($apirecordings);
   }

@@ -22,6 +22,8 @@
       $worklist[] = $rec["work"];
     }
 
+    $id = -1;
+
     $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
 
     foreach ($recordings as $rec)
@@ -61,6 +63,11 @@
     $apirecordings = $apireturn["recordings"];
     ksort ($apirecordings);
     $apireturn["recordings"] = array_values ($apirecordings);
+  }
+
+  foreach ($apireturn["recordings"] as $apid => $apirec)
+  {
+    $apireturn["recordings"][$apid]["performers"] = orderperformers ($apirec["performers"]);
   }
 
   if (isset ($apireturn["recordings"]))
