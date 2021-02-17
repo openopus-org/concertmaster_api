@@ -3,7 +3,7 @@
 
   // try to find the recording
 
-  $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.spotify_albumid, recording.work_id as work, spotify_imgurl as cover, performer, role from recording, recording_performer, user_recording where user_recording.user_id = '{$_REQUEST["id"]}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and user_recording.favorite = 1 order by work asc, recording.spotify_albumid asc, recording.subset asc");
+  $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.verified, recording.subset, recording.spotify_albumid, recording.work_id as work, spotify_imgurl as cover, performer, role from recording, recording_performer, user_recording where user_recording.user_id = '{$_REQUEST["id"]}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and user_recording.favorite = 1 order by work asc, recording.spotify_albumid asc, recording.subset asc");
 
   if (!$recordings)
   {
@@ -36,7 +36,8 @@
             "spotify_albumid" => $rec["spotify_albumid"],
             "set" => (String) $rec["subset"],
             "cover" => $rec["cover"],
-            "observation" => $rec["observation"]
+            "observation" => $rec["observation"],
+            "verified" => $rec["verified"]
           );
       }
 
