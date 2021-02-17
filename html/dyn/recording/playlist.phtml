@@ -62,13 +62,14 @@
         (
           "composer"=>Array
             (
-              "id"=>$obworks["works"]["w:". $rec["work"]]["composer"]["id"],
-              "name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["name"],
-              "epoch"=>$obworks["works"]["w:". $rec["work"]]["composer"]["epoch"]
+              "id"=>($rec["composer_name"] ? "0" : $obworks["works"]["w:". $rec["work"]]["composer"]["id"]),
+              "name"=>($rec["composer_name"] ? $rec["composer_name"] : $obworks["works"]["w:". $rec["work"]]["composer"]["name"]),
+              "complete_name"=>($rec["composer_name"] ? $rec["composer_name"] : $obworks["works"]["w:". $rec["work"]]["composer"]["complete_name"]),
+              "epoch"=>($rec["composer_name"] ? "None" : $obworks["works"]["w:". $rec["work"]]["composer"]["epoch"])
             ),
            "id"=>$rec["work"],
-           "title"=>$obworks["works"]["w:". $rec["work"]]["title"],
-           "genre"=>$obworks["works"]["w:". $rec["work"]]["genre"],
+           "title"=>($rec["work_title"] ? $rec["work_title"] : $obworks["works"]["w:". $rec["work"]]["title"]),
+           "genre"=>($rec["work_title"] ? "None" : $obworks["works"]["w:". $rec["work"]]["genre"]),
         );
 
       $lastid = $rec["id"];
@@ -81,7 +82,7 @@
       $apirecordings[$apid]["performers"] = orderperformers ($apirec["performers"]);
       $apirecordings[$apid]["recording_id"] = "wkid-". $apirec["work"]["id"]. "-". $apirec["apple_albumid"] . "-". slug(implode ("-", arraykeepvalues ($apirecordings[$apid]["performers"], ["name"])));
     }
-    
+
     ksort ($apirecordings);
     $apireturn["recordings"] = array_values ($apirecordings);
   }
