@@ -79,4 +79,7 @@ RewriteRule search/(.*)/(.*)/(.*).json dyn/search/list.phtml?market=$1&search=$2
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule search/(.*)/(.*).json dyn/search/list.phtml?search=$1&offset=$2 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/list/recent.json recording/list/playlist/141.json [L]
 </IfModule>
