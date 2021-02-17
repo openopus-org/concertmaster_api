@@ -1,13 +1,13 @@
 <?
   include_once ("../../../lib/inc.php");
 
-  // try to find the recording
+  // try to find recordings
 
   $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.verified, recording.spotify_albumid, recording.work_id as work, recording.composer_name as composer_name, recording.work_title as work_title, spotify_imgurl as cover, performer, role from recording, recording_performer, playlist_recording where playlist_id = '{$_REQUEST["id"]}' and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and playlist_recording.work_id = recording.work_id and playlist_recording.subset = recording.subset and playlist_recording.spotify_albumid = recording.spotify_albumid order by position desc, work asc, recording.spotify_albumid asc, recording.subset asc");
 
   if (!$recordings)
   {
-    // if the recording doesn't exist, return an error
+    // if there are no recordings, return an error
 
     $apireturn["status"] = Array ("success"=>"false", "error"=>"No recordings found");
   }
@@ -34,19 +34,34 @@
 
     foreach ($recordings as $rec)
     {
-      $worklist[] = $rec["work"];
+      if ($rec["composer_name"] == "")
+      {
+        if (is_numeric ($rec["work"])) $worklist[] = $rec["work"];
+      }
+    }
+
+    if (sizeof ($worklist))
+    {
+      $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
     }
 
     $id = -1;
-
-    $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
 
     foreach ($recordings as $rec)
     {
       if ($lastid != $rec["id"])
       {
         $id = $id + 1;
-        $vid = slug ($obworks["works"]["w:". $rec["work"]]["composer"]["name"]. "-". $obworks["works"]["w:". $rec["work"]]["title"]. "-". $id);
+
+        if ($rec["composer_name"])
+        {
+          $vid = slug ($rec["composer_name"]. "-". $rec["work_title"]. "-". $id);
+        }
+        else
+        {
+          $vid = slug ($obworks["works"]["w:". $rec["work"]]["composer"]["name"]. "-". $obworks["works"]["w:". $rec["work"]]["title"]. "-". $id);
+        }
+
         $apireturn["recordings"][$vid] = Array
           (
             "spotify_albumid" => $rec["spotify_albumid"],
@@ -91,6 +106,22 @@
   {
     $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
     $apireturn["works"] = $obworks["abstract"];
+
+    foreach ($recordings as $rec)
+    {
+      if ($rec["composer_name"])
+      {
+        $cn = end (explode (" ", $rec["composer_name"]));
+        if (!in_array ($cn, $apireturn["works"]["composers"]["names"]))
+        {
+          $apireturn["works"]["composers"]["portraits"][] = OPENOPUS_DEFCOMP;
+          $apireturn["works"]["composers"]["names"][] = $cn;
+          $apireturn["works"]["works"]["rows"] += 1;
+        }
+      }
+    }
+
+    $apireturn["works"]["composers"]["rows"] = sizeof ($apireturn["works"]["composers"]["names"]);
   }
 
   echo savecache ("/recording/list/playlist/{$_REQUEST["id"]}.json", apireturn ($apireturn));
