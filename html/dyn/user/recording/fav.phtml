@@ -3,7 +3,7 @@
 
   // try to find the recording
 
-  $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.verified, recording.subset, recording.spotify_albumid, recording.work_id as work, spotify_imgurl as cover, performer, role from recording, recording_performer, user_recording where user_recording.user_id = '{$_REQUEST["id"]}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and user_recording.favorite = 1 order by work asc, recording.spotify_albumid asc, recording.subset asc");
+  $recordings = mysqlfetch ($mysql, "select concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.verified, recording.spotify_albumid, recording.composer_name as composer_name, recording.work_title as work_title, recording.work_id as work, spotify_imgurl as cover, performer, role from recording, recording_performer, user_recording where user_recording.user_id = '{$_REQUEST["id"]}' and user_recording.work_id = recording.work_id and user_recording.spotify_albumid = recording.spotify_albumid and user_recording.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid and user_recording.favorite = 1 order by work asc, recording.spotify_albumid asc, recording.subset asc");
 
   if (!$recordings)
   {
@@ -19,20 +19,34 @@
 
     foreach ($recordings as $rec)
     {
-      $worklist[] = $rec["work"];
+      if (!$rec["composer_name"])
+      {
+        $worklist[] = $rec["work"];
+      }
+    }
+
+    if (sizeof ($worklist))
+    {
+      $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
     }
 
     $id = -1;
-
-    $obworks = openopusdownparse ("work/list/{$_REQUEST["cid"]}/ids/". implode (",", array_unique ($worklist)). ".json");
 
     foreach ($recordings as $rec)
     {
       if ($lastid != $rec["id"])
       {
         $id = $id + 1;
-        $vid = slug ($obworks["works"]["w:". $rec["work"]]["composer"]["name"]. "-". $obworks["works"]["w:". $rec["work"]]["title"]. "-". $id);
-        
+
+        if ($rec["composer_name"])
+        {
+          $vid = slug ($rec["composer_name"]. "-". $rec["work_title"]. "-". $id);
+        }
+        else
+        {
+          $vid = slug ($obworks["works"]["w:". $rec["work"]]["composer"]["name"]. "-". $obworks["works"]["w:". $rec["work"]]["title"]. "-". $id);
+        }
+
         $apireturn["recordings"][$vid] = Array
           (
             "spotify_albumid" => $rec["spotify_albumid"],
@@ -76,10 +90,26 @@
     $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
     $apireturn["works"] = $obworks["abstract"];
     
+    foreach ($recordings as $rec)
+    {
+      if ($rec["composer_name"])
+      {
+        $cn = end (explode (" ", $rec["composer_name"]));
+        if (!in_array ($cn, $apireturn["works"]["composers"]["names"]))
+        {
+          $apireturn["works"]["composers"]["portraits"][] = OPENOPUS_DEFCOMP;
+          $apireturn["works"]["composers"]["names"][] = $cn;
+          $apireturn["works"]["works"]["rows"] += 1;
+        }
+      }
+    }
+
     foreach ($apireturn["recordings"] as $rec)
     {
-      $apireturn["list"][] = $rec["work"]["id"]. "-". $rec["spotify_albumid"]. "-". $rec["set"];
+      $apireturn["list"][] = $rec["work"]["id"]. "-". $rec["apple_albumid"]. "-". $rec["set"];
     }
+
+    $apireturn["works"]["composers"]["rows"] = sizeof ($apireturn["works"]["composers"]["names"]);
   }
 
   echo savecache ("/user/{$_REQUEST["id"]}/recording/fav.json", apireturn ($apireturn));
