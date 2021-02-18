@@ -1,0 +1,20 @@
+<?
+    include_once ("../../../lib/inc.php");
+
+    // fetching the playlists
+
+    $playlists = mysqlfetch ($mysql, "select id, name, cover from playlist where public = '1' order by name asc");
+
+    // return
+
+    if (!$playlists)
+    {
+        $apireturn["status"] = Array ("success"=>"false", "error"=>"No public playlists found");
+    }
+    else
+    {
+        $apireturn["status"] = Array ("success"=>"true", "rows"=>sizeof ($playlists));
+        $apireturn["playlists"] = $playlists;
+    }
+
+    echo savecache ("/playlist/public/list.json", apireturn ($apireturn));
