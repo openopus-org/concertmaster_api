@@ -23,6 +23,7 @@
       mysqli_query ($mysql, $query);
 
       $apireturn["status"]["success"] = "true";
+      $apireturn["favoriterecordings"] = favrecordings ($_REQUEST["id"]);
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>(String) $_REQUEST["set"]);
   }
