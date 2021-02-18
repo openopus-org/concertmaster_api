@@ -87,6 +87,16 @@
       $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
 
       $spot = fetchspotify ($work, "tracks", $_REQUEST["market"]);
+
+      // dealing with empty recordings
+
+      if (!sizeof ($spot["items"]) && $work["work"]["searchmode"] == "catalogue")
+      {
+        $work["work"]["searchmode"] = "title";
+        $work["work"]["searchterms"] = [worksimplifier ($work["work"]["title"])];
+
+        $spot = fetchspotify ($work, "tracks", $_REQUEST["market"]);
+      }
     }
   }
 
