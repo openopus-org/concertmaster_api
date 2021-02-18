@@ -1,0 +1,93 @@
+<?
+  include_once ("../../../lib/inc.php");
+
+  // try to find the recordings
+
+  $recordings = mysqlfetch ($mysql, "select GROUP_CONCAT(concat(recording_performer.performer,'|',recording_performer.role) SEPARATOR '||') as performers, concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.verified, recording.spotify_albumid, recording.work_id as work, recording.composer_name, recording.work_title, spotify_imgurl as cover from recording, recording_performer, omnisearch where omnisearch.work_id = recording.work_id and omnisearch.spotify_albumid = recording.spotify_albumid and omnisearch.subset = recording.subset and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid group by recording.work_id, recording.spotify_albumid, recording.subset order by min(users) desc, min(plays) desc limit 10");
+
+  if (!$recordings)
+  {
+    // if the recording doesn't exist, return an error
+
+    $apireturn["status"] = Array ("success"=>"false", "error"=>"No recordings found");
+  }
+  else
+  {
+    // there are results, go list'em
+
+    $apireturn["status"] = Array ("success"=>"true", "source"=>"db");
+
+    // open opus api call
+
+    foreach ($recordings as $rec)
+    {
+        if (!stristr ($rec["work"], "at*")) $worklist[] = $rec["work"];
+    }
+
+    $obworks = openopusdownparse ("work/list/ids/". implode (",", array_unique ($worklist)). ".json");
+
+    foreach ($recordings as $rec)
+    {
+        $apireturn["recordings"][$rec["id"]] = Array
+        (
+            "position" => ++$position,
+            "spotify_albumid" => $rec["spotify_albumid"],
+            "set" => (Int) $rec["subset"],
+            "cover" => $rec["cover"],
+            "observation" => $rec["observation"],
+            "verified" => $rec["verified"]
+        );
+
+        foreach (explode ("||", $rec["performers"]) as $perf)
+        {
+            $apireturn["recordings"][$rec["id"]]["performers"][] = Array ("name"=>explode ("|", $perf)[0],"role"=>explode ("|", $perf)[1]);
+        }
+        
+        if ($rec["composer_name"])
+        {
+            $apireturn["recordings"][$rec["id"]]["work"] = Array
+            (
+                "composer"=>Array
+                    (
+                    "id"=>"0",
+                    "name"=>$rec["composer_name"],
+                    "complete_name"=>$rec["composer_name"],
+                    "epoch"=>"None"
+                    ),
+                "id"=>$rec["work"],
+                "title"=>$rec["work_title"],
+                "genre"=>"None"
+            );
+        }
+        else
+        {
+            $apireturn["recordings"][$rec["id"]]["work"] = Array
+            (
+                "composer"=>Array
+                (
+                    "id"=>$obworks["works"]["w:". $rec["work"]]["composer"]["id"],
+                    "name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["name"],
+                    "complete_name"=>$obworks["works"]["w:". $rec["work"]]["composer"]["complete_name"],
+                    "epoch"=>$obworks["works"]["w:". $rec["work"]]["composer"]["epoch"]
+                ),
+                "id"=>$rec["work"],
+                "title"=>$obworks["works"]["w:". $rec["work"]]["title"],
+                "genre"=>$obworks["works"]["w:". $rec["work"]]["genre"]
+            );
+        }
+    }
+
+    // performers
+
+    $apirecordings = $apireturn["recordings"];
+
+    foreach ($apirecordings as $apid => $apirec)
+    {
+        $apirecordings[$apid]["performers"] = orderperformers ($apirec["performers"]);
+    }
+
+    $apireturn["recordings"] = array_values ($apirecordings);
+    $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
+  }
+
+  echo savecache ("/recording/list/trending.json", apireturn ($apireturn));

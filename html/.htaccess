@@ -84,5 +84,8 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/recent.json recording/list/playlist/141.json [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule playlist/public/list.json dyn/playlist/list.phtml [L] 
+RewriteRule playlist/public/list.json dyn/playlist/list.phtml [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/list/trending.json dyn/recording/trending.phtml [L]
 </IfModule>
