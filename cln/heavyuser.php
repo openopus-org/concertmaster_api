@@ -14,5 +14,5 @@
   $ids = mysqlfetch ($mysql, $query);
 
   // updating the db
-  $query = "update user set heavyuser='1' where id in ('". implode("','", arraykeepvalues ($ids, ["id"])). "')";
+  echo $query = "update user set heavyuser='1' where id in ('". implode("','", arraykeepvalues ($ids, ["id"])). "')";
   mysqli_query ($mysql, $query);
