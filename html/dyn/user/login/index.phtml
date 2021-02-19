@@ -28,6 +28,11 @@
       $apireturn["status"]["success"] = "true";
       $apireturn["user"] = Array ("product" => $tok["product"], "id" => $tok["id"], "name" => $tok["display_name"], "email" => $tok["email"], "country" => $tok["country"], "auth" => $auth);
 
+      // heavy user?
+
+      $udb = mysqlfetch ($mysql, "select heavyuser from user where id='$uid'");
+      $apireturn["user"]["heavyuser"] = $udb[0]["heavyuser"];
+
       // retrieving user's lists 
 
       $apireturn["works"] = worklist ($tok["id"]);
