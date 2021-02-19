@@ -31,7 +31,7 @@
       // heavy user?
 
       $udb = mysqlfetch ($mysql, "select heavyuser from user where id='{$tok["id"]}'");
-      $apireturn["user"]["heavyuser"] = $udb[0]["heavyuser"];
+      $apireturn["user"]["heavyuser"] = (Int) $udb[0]["heavyuser"];
 
       // retrieving user's lists 
 
