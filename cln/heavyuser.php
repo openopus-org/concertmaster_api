@@ -1,5 +1,5 @@
 <?
-  chdir ($_SERVER["CTINHTMLDIR"]);
+  chdir ($_SERVER["BASEHTMLDIR"]);
   include_once ("../lib/inc.php");
 
   // zeroing the db
@@ -14,5 +14,5 @@
   $ids = mysqlfetch ($mysql, $query);
 
   // updating the db
-  echo $query = "update user set heavyuser='1' where id in ('". implode("','", arraykeepvalues ($ids, ["id"])). "')";
+  $query = "update user set heavyuser='1' where id in ('". implode("','", arraykeepvalues ($ids, ["id"])). "')";
   mysqli_query ($mysql, $query);
