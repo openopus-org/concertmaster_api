@@ -22,7 +22,7 @@
     else
     {
       $goquery = false;
-      $apireturn["status"] = Array ("success"=>"false", "error"=>"Too short search term");
+      $apireturn["status"] = Array ("success"=>"false", "error"=>"Search term too short");
     }
   }
 
@@ -207,7 +207,8 @@
       // putting everything together
 
       $apireturn["status"]["rows"] = sizeof ($recordings);
-
+      if ($_REQUEST["market"]) $apireturn["status"]["market"] = $_REQUEST["market"];
+ 
       if (!$_REQUEST["offset"])
       {
         $apireturn["composers"] = array_values ($apireturn["composers"]);
