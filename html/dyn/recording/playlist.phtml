@@ -100,6 +100,41 @@
 
     ksort ($apirecordings);
     $apireturn["recordings"] = array_values ($apirecordings);
+
+    // checks spotify if recordings are available in the user's market
+
+    if ($_REQUEST["market"])
+    {
+      foreach ($apireturn["recordings"] as $recs)
+      {
+          $plids[] = $recs["spotify_albumid"];
+      }
+
+      $plidsgr = array_chunk ($plids, 20);
+      $token = spotifyauth ();
+
+      foreach ($plidsgr as $plidsp)
+      {
+        $albids = implode (",", $plidsp);
+        $chkalbs = spotifydownparse (SPOTIFYAPI. "/albums/?market={$_REQUEST["market"]}&ids={$albids}", $token);
+  
+        foreach ($chkalbs["albums"] as $albchk)
+        {
+            $albschkd[] = $albchk["id"];
+        }
+      }
+
+      foreach ($apireturn["recordings"] as $recss)
+      {
+        if (in_array ($recss["spotify_albumid"], $albschkd))
+        {
+          $apireturn["valid-recordings"][] = $recss;
+        }
+      }
+
+      $apireturn["recordings"] = $apireturn["valid-recordings"];
+      unset ($apireturn["valid-recordings"]);
+    }
   }
 
   if (isset ($apireturn["recordings"]))
@@ -124,4 +159,11 @@
     $apireturn["works"]["composers"]["rows"] = sizeof ($apireturn["works"]["composers"]["names"]);
   }
 
-  echo savecache ("/recording/list/playlist/{$_REQUEST["id"]}.json", apireturn ($apireturn));
+  if ($_REQUEST["market"])
+  {
+    echo savecache ("/recording/{$_REQUEST["market"]}/list/playlist/{$_REQUEST["id"]}.json", apireturn ($apireturn));
+  }
+  else
+  {
+    echo savecache ("/recording/list/playlist/{$_REQUEST["id"]}.json", apireturn ($apireturn));
+  }

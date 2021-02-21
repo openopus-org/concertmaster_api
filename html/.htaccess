@@ -42,6 +42,9 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule recording/list/playlist/(.*).json dyn/recording/playlist.phtml?id=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule recording/(.*)/list/playlist/(.*).json dyn/recording/playlist.phtml?market=$1&id=$2 [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule user/(.*)/recording/fav.json dyn/user/recording/fav.phtml?id=$1 [L]
 
 RewriteCond %{REQUEST_FILENAME} !-f

@@ -49,7 +49,7 @@
     $spot = searchspotify ($_REQUEST["search"], $_REQUEST["offset"], $_REQUEST["market"], true);
     $spotres = filterresults ($spot["recordings"]);
 
-    // filtering out the results, doing again if zero
+    // doing again without genre-filtering if no results
 
     if (sizeof ($spotres) == 0)
     {

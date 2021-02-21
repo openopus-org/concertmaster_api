@@ -86,7 +86,11 @@
     }
     else if ($return == "tracks")
     {
-      $fspalbums = spotifydownparse (SPOTIFYAPI. "/albums/". $work["recording"]["spotify_albumid"]. "/?limit=". SAPI_ITEMS, $token);
+      $spturl = SPOTIFYAPI. "/albums/". $work["recording"]["spotify_albumid"]. "/?limit=". SAPI_ITEMS;
+
+      if ($market) $spturl .= "&market={$market}";
+
+      $fspalbums = spotifydownparse ($spturl, $token);
 
       if ($fspalbums["release_date_precision"] == "day") 
       {
@@ -105,9 +109,13 @@
         (
           "label" => $fspalbums["label"],
           "cover" => $fspalbums["images"][0]["url"],
-          "year" => $year,
-          "markets" => $fspalbums["available_markets"]
+          "year" => $year
         );
+
+      if (!$market)
+      {
+        $extras["markets"] = $fspalbums["available_markets"];
+      }
 
       if (!sizeof ($fspalbums["tracks"]["items"]))
       {
@@ -277,6 +285,7 @@
     if ($market) $spturl .= "&market={$market}";
 
     $amres = spotifydownparse ($spturl, $token);
+
     $loop = 1;
 
     while ($amres["tracks"]["next"] && $loop <= SAPI_PAGES)
@@ -502,9 +511,10 @@
         "title" => $spalbums["name"],
         "label" => $spalbums["label"],
         "cover" => $spalbums["images"][0]["url"],
-        "year" => $year,
-        "markets" => $spalbums["available_markets"]
+        "year" => $year
       );
+
+      if (!$market) $extras["markets"] = $spalbums["available_markets"];
 
     //print_r ([$spalbums, $spalbums["tracks"]["next"]]);
 

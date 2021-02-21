@@ -30,7 +30,7 @@
   {
     // listing results
 
-    $sql = "select GROUP_CONCAT(concat(recording_performer.performer,'//',coalesce(recording_performer.role,'')) SEPARATOR '||') as performers, concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.verified, recording.compilation, recording.spotify_albumid, recording.work_id as work, recording.composer_name, recording.work_title, spotify_imgurl as cover, min(if ({$relevancematch} > 0, 1, 0)) as relevance, min({$composermatch}) as composerrelevance from recording, recording_performer, omnisearch where omnisearch.work_id = recording.work_id and omnisearch.spotify_albumid = recording.spotify_albumid and omnisearch.subset = recording.subset and {$wherematch} and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid group by recording.work_id, recording.spotify_albumid, recording.subset order by composerrelevance desc, relevance desc, min(plays) desc, min(omnisearch.popular) desc, min(omnisearch.recommended) desc, work asc, recording.spotify_albumid asc, recording.subset asc limit 25 offset {$_REQUEST["offset"]}";
+    $sql = "select GROUP_CONCAT(concat(recording_performer.performer,'//',coalesce(recording_performer.role,'')) SEPARATOR '||') as performers, concat(recording.work_id,'-',recording.spotify_albumid,'-',recording.subset) as id, recording.observation as observation, recording.subset, recording.verified, recording.compilation, recording.spotify_albumid, recording.work_id as work, recording.composer_name, recording.work_title, spotify_imgurl as cover, min(if ({$relevancematch} > 0, 1, 0)) as relevance, min({$composermatch}) as composerrelevance from recording, recording_performer, omnisearch where omnisearch.work_id = recording.work_id and omnisearch.spotify_albumid = recording.spotify_albumid and omnisearch.subset = recording.subset and {$wherematch} and recording_performer.work_id = recording.work_id and recording_performer.subset = recording.subset and recording_performer.spotify_albumid = recording.spotify_albumid group by recording.work_id, recording.spotify_albumid, recording.subset order by composerrelevance desc, relevance desc, min(plays) desc, min(omnisearch.popular) desc, min(omnisearch.recommended) desc, work asc, recording.spotify_albumid asc, recording.subset asc limit 20 offset {$_REQUEST["offset"]}";
     $recordings = mysqlfetch ($mysql, $sql);
 
     if (!$recordings)
@@ -120,18 +120,18 @@
 
       // checks spotify if recordings are available in the storefront
 
-      /*
-      if ($_REQUEST["country"])
+      if ($_REQUEST["market"])
       {
         foreach ($apireturn["recordings"] as $recs)
         {
             $plids[] = $recs["spotify_albumid"];
         }
 
+        $token = spotifyauth ();
         $albids = implode (",", $plids);
-        $chkalbs = spotifydownparse (SPOTIFYAPI. "/catalog/{$_REQUEST["country"]}/albums?ids={$albids}", APPMUSTOKEN);
+        $chkalbs = spotifydownparse (SPOTIFYAPI. "/albums/?market={$_REQUEST["market"]}&ids={$albids}", $token);
 
-        foreach ($chkalbs["data"] as $albchk)
+        foreach ($chkalbs["albums"] as $albchk)
         {
             $albschkd[] = $albchk["id"];
         }
@@ -147,7 +147,6 @@
         $apireturn["recordings"] = $apireturn["valid-recordings"];
         unset ($apireturn["valid-recordings"]);
       }
-      */
 
       // composers and works search
 
@@ -222,4 +221,4 @@
     }
   }
 
-  echo savecache ("/omnisearch/{$_REQUEST["country"]}/{$_REQUEST["originalsearch"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+  echo savecache ("/omnisearch/{$_REQUEST["market"]}/{$_REQUEST["originalsearch"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));

@@ -91,6 +91,8 @@
     if (isset ($apireturn["recordings"]))
     {
       $apireturn["status"] = Array ("success"=>"true", "stats"=> $spot["stats"]);
+      if ($_REQUEST["market"]) $apireturn["status"]["market"] = $_REQUEST["market"];
+      if ($_REQUEST["extra"]) $apireturn["status"]["extra_search"] = $_REQUEST["extra"];
       $apireturn = compilationdigest ($apireturn, false, true);
     }
     else
@@ -100,11 +102,26 @@
     }
   }
 
-  if ($_REQUEST["market"])
+  if ($_REQUEST["extra"])
   {
-    echo savecache ("/recording/{$_REQUEST["market"]}/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    if ($_REQUEST["market"])
+    {
+      echo savecache ("/recording/{$_REQUEST["market"]}/list/work/{$_REQUEST["id"]}/{$_REQUEST["extra"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    }
+    else
+    {
+      echo savecache ("/recording/list/work/{$_REQUEST["id"]}/{$_REQUEST["extra"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    }
   }
   else
   {
-    echo savecache ("/recording/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    if ($_REQUEST["market"])
+    {
+      echo savecache ("/recording/{$_REQUEST["market"]}/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    }
+    else
+    {
+      echo savecache ("/recording/list/work/{$_REQUEST["id"]}/{$_REQUEST["offset"]}.json", apireturn ($apireturn));
+    }
   }
+  

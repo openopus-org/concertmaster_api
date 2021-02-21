@@ -20,11 +20,13 @@
 
     $goquery = true;
     $work_spotid = str_replace ("at*", "", $_REQUEST["wid"]);
-    $apireturn["status"] = Array ("success"=>"true", "source"=>"ext", "market"=>$_REQUEST["market"]);
+    $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
+
+    if ($_REQUEST["market"]) $apireturn["status"]["market"] = $_REQUEST["market"];
 
     // fetching album and looking for the track
     
-    $spot = albumspotify ($_REQUEST["aid"], $_REQUEST["country"]);
+    $spot = albumspotify ($_REQUEST["aid"], $_REQUEST["market"]);
 
     //print_r ([$work_spotid, $spot]);
     //end;
@@ -86,6 +88,8 @@
       $apireturn["recording"]["length"] = 0;
       $apireturn["status"] = Array ("success"=>"true", "source"=>"ext");
 
+      if ($_REQUEST["market"]) $apireturn["status"]["market"] = $_REQUEST["market"];
+
       $spot = fetchspotify ($work, "tracks", $_REQUEST["market"]);
 
       // dealing with empty recordings
@@ -137,7 +141,7 @@
     $apireturn["recording"]["cover"] = $spot["extras"]["cover"];
     $apireturn["recording"]["set"] = (String) $_REQUEST["set"];
     $apireturn["recording"]["year"] = explode ("-", $spot["extras"]["year"])[0];
-    $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
+    if ($spot["extras"]["markets"]) $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
     $apireturn["recording"]["label"] = $spot["extras"]["label"];
     $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? orderperformers (end($spotres)["extraperformers"]): allperformers (end($spotres)["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]);
   }
