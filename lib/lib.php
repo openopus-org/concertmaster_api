@@ -340,9 +340,14 @@
 
         unset ($subtitle);
 
+        /*
         $alb["name"] = str_replace (end (explode (" ", $alb["artists"][0]["name"])), "", str_replace (end (explode (" ", $alb["artists"][0]["name"])). ": ", "", str_replace ($alb["artists"][0]["name"], "", str_replace ($alb["artists"][0]["name"]. ": ", "", $alb["name"]))));
         $alb["name"] = preg_replace ('/^(( )*( |\,|\(|\'|\"|\-|\;|\:)( )*)/i', '', $alb["name"], 1);
         $work_title = explode (":", $alb["name"])[0];
+        */
+
+        $alb["name"] = worktitle ($alb["name"], $alb["artists"][0]["name"]);
+        $work_title = (explode (":", $alb["name"]))[0];
 
         preg_match ('/(\(.*?\))/i', $alb["name"], $matches);
 
@@ -530,9 +535,13 @@
 
     foreach ($data as $alb)
     {
+      /*
       $alb["name"] = str_replace (end (explode (" ", $alb["artists"][0]["name"])), "", str_replace (end (explode (" ", $alb["artists"][0]["name"])). ": ", "", str_replace ($alb["artists"][0]["name"], "", str_replace ($alb["artists"][0]["name"]. ": ", "", $alb["name"]))));
       $alb["name"] = preg_replace ('/^(( )*( |\,|\(|\'|\"|\-|\;|\:)( )*)/i', '', $alb["name"], 1);
-      
+      $alb["work_name"] = (explode (":", $alb["name"]))[0];
+      */
+
+      $alb["name"] = worktitle ($alb["name"], $alb["artists"][0]["name"]);
       $alb["work_name"] = (explode (":", $alb["name"]))[0];
 
       preg_match_all (CATALOGUE_REGEX, $alb["work_name"], $matches);
@@ -541,6 +550,16 @@
       if ($catalogue)
       {
         $work_title = $matches[0][0];
+
+        if (strtolower ($catalogue) == "op" || strtolower ($catalogue) == "opus")
+        {
+          preg_match_all ('/(no\.)( )*([0-9]*)/i', $alb["work_name"], $opmatches);
+          
+          if (sizeof ($opmatches[0]))
+          {
+            $work_title .= " no. ". trim(end($opmatches[3]));
+          }
+        }
       }
       else
       {
