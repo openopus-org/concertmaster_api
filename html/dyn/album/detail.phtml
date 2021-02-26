@@ -78,8 +78,8 @@
             {
                 $rec["tracks"][$trid]["starting_point"] = $acctiming;
                 $acctiming += $track["length"];
-                $apireturn["album"]["spotify_tracks"][] = $rec["tracks"][$trid]["spotify_trackid"];
-                $rec["spotify_tracks"][] = $rec["tracks"][$trid]["spotify_trackid"];
+                $apireturn["album"]["spotify_tracks"][] = "spotify:track:". $rec["tracks"][$trid]["spotify_trackid"];
+                $rec["spotify_tracks"][] = "spotify:track:". $rec["tracks"][$trid]["spotify_trackid"];
                 if ($rec["tracks"][$trid]["preview"]) $apireturn["album"]["previews"][] = $rec["tracks"][$trid]["preview"];
                 if ($rec["tracks"][$trid]["preview"]) $rec["previews"][] = $rec["tracks"][$trid]["preview"];
             }
