@@ -38,7 +38,7 @@
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["playlist"]["id"] = $_REQUEST["pid"];
       $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>(String) $_REQUEST["set"]);
-      $apireturn["list"] = playlists ($_REQUEST["id"]);
+      $apireturn["list"] = userplaylists ($_REQUEST["id"]);
   }
 
   shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");

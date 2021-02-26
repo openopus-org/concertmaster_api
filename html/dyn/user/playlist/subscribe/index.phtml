@@ -31,7 +31,7 @@
         $apireturn["status"]["success"] = "false";
       }
 
-      $apireturn["list"] = playlists ($_REQUEST["id"]);
+      $apireturn["list"] = userplaylists ($_REQUEST["id"]);
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["playlist"]["id"] = $_REQUEST["pid"];
   }

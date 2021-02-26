@@ -33,7 +33,7 @@
       
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["playlist"] = ["id"=>$_REQUEST["pid"]];
-      $apireturn["list"] = playlists ($_REQUEST["id"]);
+      $apireturn["list"] = userplaylists ($_REQUEST["id"]);
   }
 
   shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
