@@ -240,6 +240,7 @@
               "position" => $alb["track_number"],
               "length" => round ($alb["duration_ms"] / 1000, 0, PHP_ROUND_HALF_UP),
               "spotify_trackid" => $alb["id"],
+              "preview" => $alb["preview_url"],
               "performers" => $performers
             );
           }

@@ -130,7 +130,8 @@
         "position" => $tart["position"],
         "length" => $tart["length"],
         "title" => $tart["title"],
-        "spotify_trackid" => $tart["spotify_trackid"]
+        "spotify_trackid" => $tart["spotify_trackid"],
+        "preview" => $tart["preview"]
       );
 
       $apireturn["recording"]["tracks"][] = end ($trinsert);
@@ -157,6 +158,7 @@
       $apireturn["recording"]["tracks"][$trid]["starting_point"] = $acctiming;
       $acctiming += $track["length"];
       $apireturn["recording"]["spotify_tracks"][] = "spotify:track:". $apireturn["recording"]["tracks"][$trid]["spotify_trackid"];
+      $apireturn["recording"]["previews"][] = $apireturn["recording"]["tracks"][$trid]["preview"];
     }
   }
 
