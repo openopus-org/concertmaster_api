@@ -160,6 +160,10 @@
       $apireturn["recording"]["spotify_tracks"][] = "spotify:track:". $apireturn["recording"]["tracks"][$trid]["spotify_trackid"];
       $apireturn["recording"]["previews"][] = $apireturn["recording"]["tracks"][$trid]["preview"];
     }
+
+    // checking if all preview files are set and valid
+
+    $apireturn["recording"]["previews"] = allvalidonly ($apireturn["recording"]["previews"]);
   }
 
   if ($_REQUEST["market"])

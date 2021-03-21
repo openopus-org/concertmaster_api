@@ -84,6 +84,10 @@
                 if ($rec["tracks"][$trid]["preview"]) $apireturn["album"]["previews"][] = $rec["tracks"][$trid]["preview"];
                 if ($rec["tracks"][$trid]["preview"]) $rec["previews"][] = $rec["tracks"][$trid]["preview"];
             }
+
+            // checking if all preview files are set and valid
+
+            $rec["previews"] = allvalidonly ($rec["previews"]);
         }
 
         $apireturn["recordings"][] = Array (
@@ -91,6 +95,8 @@
             "recording" => $rec
         );
     }
+
+    $apireturn["album"]["previews"] = allvalidonly ($apireturn["album"]["previews"]);
 
     if ($_REQUEST["market"])
     {
