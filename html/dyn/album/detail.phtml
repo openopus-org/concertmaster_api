@@ -80,7 +80,7 @@
                 $acctiming += $track["length"];
                 $apireturn["album"]["spotify_tracks"][] = "spotify:track:". $rec["tracks"][$trid]["spotify_trackid"];
                 $rec["spotify_tracks"][] = "spotify:track:". $rec["tracks"][$trid]["spotify_trackid"];
-                $rec["previews"][] = $rec["tracks"][$trid]["preview"];
+                //$rec["previews"][] = $rec["tracks"][$trid]["preview"];
                 if ($rec["tracks"][$trid]["preview"]) $apireturn["album"]["previews"][] = $rec["tracks"][$trid]["preview"];
                 if ($rec["tracks"][$trid]["preview"]) $rec["previews"][] = $rec["tracks"][$trid]["preview"];
             }
@@ -96,7 +96,17 @@
         );
     }
 
-    $apireturn["album"]["previews"] = allvalidonly ($apireturn["album"]["previews"]);
+    // checking if any recording doesn't have preview files
+
+    foreach ($apireturn["recordings"] as $r)
+    {
+        if (!sizeof ($r["recording"]["previews"]))
+        {
+            $apireturn["album"]["previews"] = [];
+        }
+    }
+
+    // printing out results
 
     if ($_REQUEST["market"])
     {
