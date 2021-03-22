@@ -140,7 +140,7 @@
 
     $apireturn["recording"]["verified"] = $spot["extras"]["verified"] ? "true" : "false";
     $apireturn["recording"]["cover"] = $spot["extras"]["cover"];
-    $apireturn["recording"]["set"] = (String) $_REQUEST["set"];
+    $apireturn["recording"]["set"] = (String) $_REQUEST["originalset"];
     $apireturn["recording"]["year"] = explode ("-", $spot["extras"]["year"])[0];
     if ($spot["extras"]["markets"]) $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
     $apireturn["recording"]["label"] = $spot["extras"]["label"];
@@ -168,9 +168,9 @@
 
   if ($_REQUEST["market"])
   {
-    echo savecache ("/recording/{$_REQUEST["market"]}/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json", apireturn ($apireturn));
+    echo savecache ("/recording/{$_REQUEST["market"]}/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["originalset"]}.json", apireturn ($apireturn));
   }
   else
   {
-    echo savecache ("/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json", apireturn ($apireturn));
+    echo savecache ("/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["originalset"]}.json", apireturn ($apireturn));
   }

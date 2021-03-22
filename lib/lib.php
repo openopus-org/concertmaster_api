@@ -175,7 +175,10 @@
           {
             similar_text (str_replace (" ", "", $wk["searchterm"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0], true)), $sim);
   
+            //print_r ([str_replace (" ", "", $wk["searchterm"]), str_replace (" ", "", worksimplifier (explode (":", $alb["name"])[0], true)), $sim, str_replace ('-', '', slug ($alb["name"])), str_replace ('-', '', slug ($wk["searchterm"]))]);
+
             if (stripos (str_replace ('-', '', slug ($alb["name"])), str_replace ('-', '', slug ($wk["searchterm"]))) !== false && $sim > $simwkdb) 
+            //if ($sim > $simwkdb)
             {
               $simwkdb = $sim;
               $mostwkdb = $wk["id"];
