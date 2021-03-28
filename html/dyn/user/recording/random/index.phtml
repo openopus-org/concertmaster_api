@@ -24,7 +24,17 @@
 
                 if ($recordings["status"]["rows"])
                 {
-                    $recording = $recordings["recordings"][rand (0, $recordings["status"]["rows"])];
+                    // removing incomplete recordings
+
+                    foreach ($recordings["recordings"] as $rec)
+                    {
+                        if ($rec["compilation"] == "false")
+                        {
+                            $validrecordings[] = $rec;
+                        }
+                    }
+
+                    $recording = $validrecordings[rand (0, sizeof ($validrecordings))];
                     $recordingdetail = selfdownparse ("recording/detail/work/{$work["id"]}/album/{$recording["spotify_albumid"]}/{$recording["set"]}.json");
                     
                     if ($recordingdetail["status"]["success"] == "true")
