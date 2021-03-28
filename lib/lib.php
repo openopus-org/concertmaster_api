@@ -942,3 +942,11 @@
 
     return $return;
   }
+
+  // self wrapper
+
+  function selfdownparse ($url, $post = false)
+  {
+    $api = CURL_Internals ("http://". $_SERVER["HTTP_HOST"]. "/". $url, false, false, ($post ? arraypost ($post) : false), false);
+    return json_decode ($api, true);
+  }

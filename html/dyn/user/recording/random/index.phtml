@@ -1,0 +1,50 @@
+<?
+    ob_start ();
+    include_once ("../../work/random/index.phtml");
+    ob_clean ();
+
+    $worksapi = $apireturn;
+
+    unset ($apireturn);
+
+    if (sizeof ($worksapi["works"]))
+    {
+        $apireturn["status"] = Array ("success"=>"true");
+        $apireturn["criteria"] = $worksapi["criteria"];
+
+        $apireturn["tracks"]["spotify_tracks"] = [];
+        $apireturn["tracks"]["previews"] = [];
+        $apireturn["tracks"]["index"] = [];
+
+        foreach (array_slice ($worksapi["works"], 0, MAXIMUM_RAND_RECORDINGS) as $work)
+        {
+            if (sizeof ($apireturn["tracks"]["spotify_tracks"]) < MAXIMUM_RAND_TRACKS)
+            {
+                $recordings = selfdownparse ("recording/list/work/{$work["id"]}/0.json");
+
+                if ($recordings["status"]["rows"])
+                {
+                    $recording = $recordings["recordings"][rand (0, $recordings["status"]["rows"])];
+                    $recordingdetail = selfdownparse ("recording/detail/work/{$work["id"]}/album/{$recording["spotify_albumid"]}/{$recording["set"]}.json");
+                    
+                    if ($recordingdetail["status"]["success"] == "true")
+                    {
+                        $apireturn["recordings"][] = ["work" => $recordingdetail["work"], "recording" => $recordingdetail["recording"]];
+                        $apireturn["tracks"]["spotify_tracks"] = array_merge ($apireturn["tracks"]["spotify_tracks"], $recordingdetail["recording"]["spotify_tracks"]);
+                        $apireturn["tracks"]["previews"] = array_merge ($apireturn["tracks"]["previews"], $recordingdetail["recording"]["previews"]);
+    
+                        foreach ($recordingdetail["recording"]["spotify_tracks"] as $sptrack)
+                        {
+                            $apireturn["tracks"]["index"][] = ["spotify_track" => $sptrack, "recording" => sizeof ($apireturn["recordings"]) - 1];
+                        }                        
+                    }
+                }
+            }
+        }
+    }
+    else
+    {
+        $apireturn["status"] = Array ("success"=>"false", "error"=>"No works found");
+    }
+
+    echo apireturn ($apireturn);

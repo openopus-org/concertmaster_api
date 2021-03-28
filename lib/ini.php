@@ -24,6 +24,8 @@
   define ("SAPI_PAGES", 5);
   define ("API_RETURN", "json");
   define ("HASH_SALT", "vUJmLwFgniCBmqcreBbsX9Jb");
+  define ("MAXIMUM_RAND_RECORDINGS", 10);
+  define ("MAXIMUM_RAND_TRACKS", 10);
   
   // spotify constants
 
