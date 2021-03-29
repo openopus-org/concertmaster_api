@@ -26,6 +26,8 @@
                 {
                     // removing incomplete recordings
 
+                    unset ($validrecordings);
+
                     foreach ($recordings["recordings"] as $rec)
                     {
                         if ($rec["compilation"] == "false")
@@ -34,19 +36,22 @@
                         }
                     }
 
-                    $recording = $validrecordings[rand (0, sizeof ($validrecordings))];
-                    $recordingdetail = selfdownparse ("recording/detail/work/{$work["id"]}/album/{$recording["spotify_albumid"]}/{$recording["set"]}.json");
-                    
-                    if ($recordingdetail["status"]["success"] == "true")
+                    if (sizeof ($validrecordings))
                     {
-                        $apireturn["recordings"][] = ["work" => $recordingdetail["work"], "recording" => $recordingdetail["recording"]];
-                        $apireturn["tracks"]["spotify_tracks"] = array_merge ($apireturn["tracks"]["spotify_tracks"], $recordingdetail["recording"]["spotify_tracks"]);
-                        $apireturn["tracks"]["previews"] = array_merge ($apireturn["tracks"]["previews"], $recordingdetail["recording"]["previews"]);
-    
-                        foreach ($recordingdetail["recording"]["spotify_tracks"] as $sptrack)
+                        $recording = $validrecordings[rand (0, sizeof ($validrecordings))];
+                        $recordingdetail = selfdownparse ("recording/detail/work/{$work["id"]}/album/{$recording["spotify_albumid"]}/{$recording["set"]}.json");
+                        
+                        if ($recordingdetail["status"]["success"] == "true")
                         {
-                            $apireturn["tracks"]["index"][] = ["spotify_track" => $sptrack, "recording" => sizeof ($apireturn["recordings"]) - 1];
-                        }                        
+                            $apireturn["recordings"][] = ["work" => $recordingdetail["work"], "recording" => $recordingdetail["recording"]];
+                            $apireturn["tracks"]["spotify_tracks"] = array_merge ($apireturn["tracks"]["spotify_tracks"], $recordingdetail["recording"]["spotify_tracks"]);
+                            $apireturn["tracks"]["previews"] = array_merge ($apireturn["tracks"]["previews"], $recordingdetail["recording"]["previews"]);
+        
+                            foreach ($recordingdetail["recording"]["spotify_tracks"] as $sptrack)
+                            {
+                                $apireturn["tracks"]["index"][] = ["spotify_track" => $sptrack, "recording" => sizeof ($apireturn["recordings"]) - 1];
+                            }                        
+                        }
                     }
                 }
             }
