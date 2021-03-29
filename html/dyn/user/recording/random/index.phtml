@@ -18,7 +18,7 @@
 
         foreach (array_slice ($worksapi["works"], 0, MAXIMUM_RAND_RECORDINGS) as $work)
         {
-            if (sizeof ($apireturn["tracks"]["spotify_tracks"]) < MAXIMUM_RAND_TRACKS)
+            if (sizeof ($apireturn["tracks"]["spotify_tracks"]) < MAXIMUM_RAND_TRACKS && $apireturn["status"]["playingtime"] < MAXIMUM_RAND_TIME)
             {
                 $recordings = selfdownparse ("recording/list/work/{$work["id"]}/0.json");
 
@@ -40,7 +40,8 @@
                     {
                         $recording = $validrecordings[rand (0, sizeof ($validrecordings))];
                         $recordingdetail = selfdownparse ("recording/detail/work/{$work["id"]}/album/{$recording["spotify_albumid"]}/{$recording["set"]}.json");
-                        
+                        $apireturn["status"]["playingtime"] += $recordingdetail["recording"]["length"];
+
                         if ($recordingdetail["status"]["success"] == "true")
                         {
                             $apireturn["recordings"][] = ["work" => $recordingdetail["work"], "recording" => $recordingdetail["recording"]];
