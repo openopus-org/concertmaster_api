@@ -145,6 +145,7 @@
     if ($spot["extras"]["markets"]) $apireturn["recording"]["markets"] = $spot["extras"]["markets"];
     $apireturn["recording"]["label"] = $spot["extras"]["label"];
     $apireturn["recording"]["performers"] = (end($spotres)["extraperformers"]) ? orderperformers (end($spotres)["extraperformers"]): allperformers (end($spotres)["performers"], $rldb, $apireturn["work"]["composer"]["complete_name"]);
+    $apireturn["recording"]["id"] = "wkid-". $_REQUEST["wid"]. "-". $work["recording"]["spotify_albumid"] . "-". slug(implode ("-", arraykeepvalues ($apireturn["recording"]["performers"], ["name"])));
   }
 
   // setting auxiliary trackset & setting tracks starting points

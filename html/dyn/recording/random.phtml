@@ -1,0 +1,54 @@
+<?
+    ob_start ();
+    include_once ("playlist.phtml");
+    ob_clean ();
+
+    $recordingsapi = $apireturn;
+    unset ($apireturn);
+
+    if (sizeof ($recordingsapi["recordings"]))
+    {
+        shuffle ($recordingsapi["recordings"]);
+
+        $apireturn["status"] = Array ("success"=>"true");
+        if ($_REQUEST["market"]) $apireturn["status"]["market"] = $_REQUEST["market"];
+
+        $apireturn["tracks"]["spotify_tracks"] = [];
+        $apireturn["tracks"]["previews"] = [];
+
+        foreach ($recordingsapi["recordings"] as $recording)
+        {
+            if (sizeof ($apireturn["tracks"]["spotify_tracks"]) < MAXIMUM_RAND_TRACKS && $apireturn["status"]["playingtime"] < MAXIMUM_RAND_TIME)
+            {
+                $recordingdetail = selfdownparse ("recording/detail/work/{$recording["work"]["id"]}/album/{$recording["spotify_albumid"]}/{$recording["set"]}.json");
+                $apireturn["status"]["playingtime"] += $recordingdetail["recording"]["length"];
+
+                if ($recordingdetail["status"]["success"] == "true")
+                {
+                    $apireturn["recordings"][] = ["work" => $recordingdetail["work"], "recording" => $recordingdetail["recording"]];
+                    $apireturn["tracks"]["spotify_tracks"] = array_merge ($apireturn["tracks"]["spotify_tracks"], $recordingdetail["recording"]["spotify_tracks"]);
+                    $apireturn["tracks"]["previews"] = array_merge ($apireturn["tracks"]["previews"], $recordingdetail["recording"]["previews"]);
+
+                    foreach ($recordingdetail["recording"]["spotify_tracks"] as $sptrack)
+                    {
+                        $apireturn["tracks"]["index"][] = ["spotify_track" => $sptrack, "recording_id" => $recordingdetail["recording"]["id"]];
+                    }                        
+                }
+            }
+        }
+
+        $apireturn["status"]["rows"] = sizeof ($apireturn["recordings"]);
+    }
+    else
+    {
+        $apireturn["status"] = Array ("success"=>"false", "error"=>"No works found");
+    }
+
+    if ($_REQUEST["market"])
+    {
+      echo savecache ("/recording/{$_REQUEST["market"]}/random/playlist/{$_REQUEST["id"]}.json", apireturn ($apireturn));
+    }
+    else
+    {
+      echo savecache ("/recording/random/playlist/{$_REQUEST["id"]}.json", apireturn ($apireturn));
+    }

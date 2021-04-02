@@ -9,6 +9,10 @@
   {
     $params = "refresh_token={$_REQUEST['token']}&grant_type=refresh_token";
   }
+  else if ($_REQUEST["refresh_token"])
+  {
+    $params = "refresh_token={$_REQUEST['refresh_token']}&grant_type=refresh_token";
+  }
   else
   {
     $params = "refresh_token=". file_get_contents('php://input'). "&grant_type=refresh_token";

@@ -50,7 +50,7 @@
         
                             foreach ($recordingdetail["recording"]["spotify_tracks"] as $sptrack)
                             {
-                                $apireturn["tracks"]["index"][] = ["spotify_track" => $sptrack, "recording" => sizeof ($apireturn["recordings"]) - 1];
+                                $apireturn["tracks"]["index"][] = ["spotify_track" => $sptrack, "recording" => $recordingdetail["recording"]["id"]];
                             }                        
                         }
                     }
