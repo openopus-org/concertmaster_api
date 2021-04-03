@@ -129,7 +129,7 @@
         "index" => $index++,
         "position" => $tart["position"],
         "length" => $tart["length"],
-        "title" => $tart["title"],
+        "title" => ($tart["title"] ? $tart["title"] : "-"),
         "spotify_trackid" => $tart["spotify_trackid"],
         "preview" => $tart["preview"]
       );
