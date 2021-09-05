@@ -861,7 +861,7 @@
   {
     global $mysql;
 
-    $query = "insert into recording (work_id, composer_name, work_title, spotify_albumid, subset, spotify_imgurl) values ('{$request["wid"]}', '{$request["composer"]}', '{$request["work"]}', '{$request["aid"]}', '{$request["set"]}', '{$request["cover"]}')";
+    $query = "insert into recording (work_id, composer_name, work_title, spotify_albumid, subset, spotify_imgurl) values ('{$request["wid"]}', '". addslashes ($request["composer"]). "', '". addslashes ($request["work"]). "', '{$request["aid"]}', '{$request["set"]}', '{$request["cover"]}')";
     mysqli_query ($mysql, $query);
 
     // inserting performers into the recording abstract database
