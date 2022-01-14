@@ -23,6 +23,7 @@
       mysqli_query ($mysql, $query);
 
       $apireturn["list"] = worklist ($_REQUEST["id"]);
+      $apireturn["composerworks"] = workcomposerlist ($_REQUEST["id"]);
       $apireturn["status"]["success"] = "true";
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["work"]["id"] = $_REQUEST["wid"];
