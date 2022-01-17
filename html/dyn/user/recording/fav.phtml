@@ -106,7 +106,7 @@
 
     foreach ($apireturn["recordings"] as $rec)
     {
-      $apireturn["list"][] = $rec["work"]["id"]. "-". $rec["apple_albumid"]. "-". $rec["set"];
+      $apireturn["list"][] = $rec["work"]["id"]. "-". $rec["spotify_albumid"]. "-". $rec["set"];
     }
 
     $apireturn["works"]["composers"]["rows"] = sizeof ($apireturn["works"]["composers"]["names"]);
