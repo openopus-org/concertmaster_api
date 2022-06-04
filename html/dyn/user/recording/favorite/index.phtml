@@ -32,5 +32,8 @@
     $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>(String) $_REQUEST["set"]);
   }
 
-  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  cachepurge ([
+    "/user/{$_REQUEST["id"]}/*"
+  ]);
+
   echo apireturn ($apireturn);

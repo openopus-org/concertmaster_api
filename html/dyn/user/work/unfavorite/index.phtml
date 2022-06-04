@@ -29,5 +29,8 @@
       $apireturn["work"]["id"] = $_REQUEST["wid"];
   }
 
-  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  cachepurge ([
+    "/user/{$_REQUEST["id"]}/*"
+  ]);
+
   echo apireturn ($apireturn);

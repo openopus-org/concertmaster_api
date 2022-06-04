@@ -33,8 +33,10 @@
       $apireturn["user"]["id"] = $_REQUEST["id"];
       $apireturn["recording"]["id"] = $_REQUEST["rid"];
 
-      shell_exec ("rm ". WEBDIR. "/recording/list/work/{$_REQUEST["work_id"]}.json");
-      shell_exec ("rm ". WEBDIR. "/recording/detail/{$_REQUEST["rid"]}.json");
+      cachepurge ([
+        "/recording/list/work/{$_REQUEST["work_id"]}.json",
+        "/recording/detail/{$_REQUEST["rid"]}.json"
+      ]);
   }
 
   echo apireturn ($apireturn);

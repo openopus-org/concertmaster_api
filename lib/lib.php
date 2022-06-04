@@ -950,3 +950,14 @@
     $api = CURL_Internals ("http://". $_SERVER["HTTP_HOST"]. "/". $url, false, false, ($post ? arraypost ($post) : false), false);
     return json_decode ($api, true);
   }
+
+  // purge cache
+
+  function cachepurge ($urlarray)
+  {
+    foreach ($urlarray as $url)
+    {
+      shell_exec ("rm ". WEBDIR. "{$url} -rf");
+      SimpleCURL (BUNNY_API. "/purge?url=". urlencode (PUBLIC_URL. $url), ["AccessKey" => BUNNY_AUTH]);
+    }    
+  }

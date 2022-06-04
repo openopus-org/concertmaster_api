@@ -41,6 +41,9 @@
       $apireturn["list"] = userplaylists ($_REQUEST["id"]);
   }
 
-  shell_exec ("rm ". WEBDIR. "/recording/list/playlist/{$_REQUEST["pid"]}.json");
-  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  cachepurge ([
+    "/recording/list/playlist/{$_REQUEST["pid"]}.json",
+    "/user/{$_REQUEST["id"]}/*"
+  ]);
+
   echo apireturn ($apireturn);

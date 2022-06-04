@@ -28,5 +28,8 @@
       $apireturn["composer"]["id"] = $_REQUEST["cid"];
   }
 
-  shell_exec ("rm ". WEBDIR. "/user/{$_REQUEST["id"]}/ -rf");
+  cachepurge ([
+    "/user/{$_REQUEST["id"]}/*"
+  ]);
+  
   echo apireturn ($apireturn);

@@ -34,8 +34,10 @@
     $apireturn["status"]["success"] = "true";
     $apireturn["recording"] = Array ("work_id"=>$_REQUEST["wid"], "spotify_albumid"=>$_REQUEST["aid"], "set"=>(String) $_REQUEST["set"], $_REQUEST["tag"] => 1);
 
-    shell_exec ("rm -rf ". WEBDIR. "/recording/list/work/{$_REQUEST["wid"]}/");
-    shell_exec ("rm -rf ". WEBDIR. "/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/");
+    cachepurge ([
+      "/recording/list/work/{$_REQUEST["wid"]}/",
+      "/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/"
+    ]);
   }
 
   echo apireturn ($apireturn);

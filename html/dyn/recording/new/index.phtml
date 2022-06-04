@@ -58,7 +58,9 @@
       $apireturn["recording"]["performers"] = $inperformers;
       $apireturn["recording"]["tracks"] = $intracks;
 
-      shell_exec ("rm ". WEBDIR. "/recording/list/work/{$_REQUEST["work_id"]}.json");
+      cachepurge ([
+        "/recording/list/work/{$_REQUEST["work_id"]}.json"
+      ]);
   }
 
   echo apireturn ($apireturn);

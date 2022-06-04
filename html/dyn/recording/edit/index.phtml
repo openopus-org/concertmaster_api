@@ -99,8 +99,10 @@
     if ($_REQUEST["tracks"]) $apireturn["recording"]["tracks"] = $intracks;      
     $apireturn["user"]["id"] = $_REQUEST["id"];
 
-    shell_exec ("rm -rf ". WEBDIR. "/recording/list/work/{$_REQUEST["wid"]}/");
-    shell_exec ("rm ". WEBDIR. "/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json");
+    cachepurge ([
+      "/recording/list/work/{$_REQUEST["wid"]}/*",
+      "/recording/detail/work/{$_REQUEST["wid"]}/album/{$_REQUEST["aid"]}/{$_REQUEST["set"]}.json"
+    ]);
   }
 
   echo apireturn ($apireturn);
