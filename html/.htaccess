@@ -4,7 +4,8 @@ Header set Access-Control-Allow-Origin "*"
 AddType 'application/json' .json
 FileETag None
 Header unset ETag
-Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+#Header set Cache-Control "max-age=0, no-cache, no-store, must-revalidate"
+Header set Cache-Control "max-age=3600, public"
 Header set Pragma "no-cache"
 Header set Expires "Wed, 11 Jan 1984 05:00:00 GMT"  
 
