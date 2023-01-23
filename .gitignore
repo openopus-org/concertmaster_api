@@ -9,3 +9,4 @@ html/import/*
 html/test/*
 log/*
 lib/inc.php
+html/dyn/newreleases/*
